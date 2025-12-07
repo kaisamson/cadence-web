@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyClientApiKey } from "@/lib/apiAuth";
 import OpenAI from "openai";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -39,6 +40,11 @@ type AnalyzeDayBody = {
 };
 
 export async function POST(req: NextRequest) {
+  
+  if (!verifyClientApiKey(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(

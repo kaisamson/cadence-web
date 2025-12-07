@@ -1,11 +1,17 @@
 // app/api/days/route.ts
+
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyClientApiKey } from "@/lib/apiAuth";
 
 const OWNER_ID = process.env.OWNER_ID;
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
+    if (!verifyClientApiKey(req)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     if (!OWNER_ID) {
       return NextResponse.json(
         { error: "OWNER_ID not set" },

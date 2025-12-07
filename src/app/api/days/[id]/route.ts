@@ -1,6 +1,7 @@
 // app/api/days/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyClientApiKey } from "@/lib/apiAuth";
 
 const OWNER_ID = process.env.OWNER_ID;
 
@@ -11,10 +12,14 @@ function isUuid(value: string): boolean {
 }
 
 export async function GET(
-  _req: NextRequest,
-  context: { params: Promise<{ id: string }> } // 👈 params is a Promise in Next 16
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (!verifyClientApiKey(req)) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     if (!OWNER_ID) {
       return NextResponse.json(
         { error: "OWNER_ID not set" },
@@ -22,7 +27,7 @@ export async function GET(
       );
     }
 
-    const { id } = await context.params; // 👈 await the Promise
+    const { id } = await context.params;
     const dayId = id;
 
     if (!dayId) {
@@ -39,7 +44,6 @@ export async function GET(
       );
     }
 
-    // 1) Fetch day + metrics
     const { data: dayRow, error: dayError } = await supabaseAdmin
       .from("days")
       .select(
@@ -98,7 +102,6 @@ export async function GET(
     const metrics =
       Array.isArray(rawMetrics) ? rawMetrics[0] ?? null : rawMetrics ?? null;
 
-    // 2) Fetch events
     const { data: eventRows, error: eventsError } = await supabaseAdmin
       .from("events")
       .select(
@@ -130,7 +133,6 @@ export async function GET(
         notes: (e.notes as string | null) ?? null,
       })) ?? [];
 
-    // 3) Shape response similar to DayAnalysis
     const response = {
       id: rawDay.id,
       date: rawDay.date,
