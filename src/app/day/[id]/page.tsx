@@ -4,12 +4,6 @@ import type { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
-const OWNER_ID = process.env.OWNER_ID;
-
-if (!OWNER_ID) {
-  throw new Error("OWNER_ID is not set in environment variables");
-}
-
 type Metrics = {
   productive_hours: number | null;
   neutral_hours: number | null;
@@ -38,22 +32,25 @@ type DayDetail = {
   events: Event[];
 };
 
-function isIsoDate(value: string): boolean {
-  // Very simple YYYY-MM-DD check; avoids hitting Supabase with garbage
-  return /^\d{4}-\d{2}-\d{2}$/.test(value);
+// Basic UUID validation to avoid 22P02 errors from Postgres
+function isUuid(value: string): boolean {
+  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+    value
+  );
 }
 
-async function getDayByDate(date: string): Promise<DayDetail | null> {
-  if (!date || date === "undefined") {
+async function getDayById(id: string): Promise<DayDetail | null> {
+  if (!id || id === "undefined") {
+    console.warn("getDayById: missing or 'undefined' id");
     return null;
   }
 
-  if (!isIsoDate(date)) {
-    // Avoid 22P02 by never querying with non-date junk
+  if (!isUuid(id)) {
+    console.warn("getDayById: invalid UUID slug", id);
     return null;
   }
 
-  // Fetch the day row + its metrics (via metrics_id)
+  // Fetch the day by primary key ONLY (no user_id filter)
   const { data: dayData, error: dayError } = await supabaseAdmin
     .from("days")
     .select(
@@ -73,16 +70,16 @@ async function getDayByDate(date: string): Promise<DayDetail | null> {
         )
       `
     )
-    .eq("user_id", OWNER_ID)
-    .eq("date", date)
+    .eq("id", id)
     .maybeSingle();
 
   if (dayError) {
-    console.error("getDayByDate dayError", dayError);
+    console.error("getDayById dayError", dayError);
     return null;
   }
 
   if (!dayData) {
+    console.warn("getDayById: no day found for id", id);
     return null;
   }
 
@@ -93,7 +90,7 @@ async function getDayByDate(date: string): Promise<DayDetail | null> {
 
   const dayId: string = dayData.id as string;
 
-  // Fetch events for this day
+  // Fetch events for this day by day_id ONLY
   const { data: eventsData, error: eventsError } = await supabaseAdmin
     .from("events")
     .select(
@@ -107,11 +104,10 @@ async function getDayByDate(date: string): Promise<DayDetail | null> {
       `
     )
     .eq("day_id", dayId)
-    .eq("user_id", OWNER_ID)
     .order("start_time", { ascending: true });
 
   if (eventsError) {
-    console.error("getDayByDate eventsError", eventsError);
+    console.error("getDayById eventsError", eventsError);
   }
 
   const events: Event[] = (eventsData ?? []).map((e) => ({
@@ -134,33 +130,31 @@ async function getDayByDate(date: string): Promise<DayDetail | null> {
   };
 }
 
+// ⬇️ Note: params is now a Promise in Next 16
 type DayDetailPageProps = {
-  params: { id: string }; // this is actually the date slug: YYYY-MM-DD
+  params: Promise<{ id: string }>;
 };
 
 export async function generateMetadata(
   props: DayDetailPageProps
 ): Promise<Metadata> {
-  const { id } = props.params;
-  const dateSlug = id;
+  const { id } = await props.params; // ✅ unwrap the Promise
   return {
-    title: isIsoDate(dateSlug)
-      ? `Cadence – Day ${dateSlug}`
-      : "Cadence – Day Detail",
+    title: isUuid(id) ? `Cadence – Day ${id}` : "Cadence – Day Detail",
   };
 }
 
-export default async function DayDetailPage({ params }: DayDetailPageProps) {
-  const dateSlug = params.id;
-  const day = await getDayByDate(dateSlug);
+export default async function DayDetailPage(props: DayDetailPageProps) {
+  const { id } = await props.params; // ✅ unwrap the Promise
+  const day = await getDayById(id);
 
   if (!day) {
     return (
       <main className="mx-auto max-w-4xl px-4 py-10 text-slate-100">
         <h1 className="mb-4 text-2xl font-semibold">Day not found.</h1>
         <p className="text-sm text-slate-400">
-          Check that the URL contains a valid date (YYYY-MM-DD), or go back to
-          the dashboard.
+          Check that the URL contains a valid day id, or go back to the
+          dashboard.
         </p>
       </main>
     );
@@ -171,9 +165,7 @@ export default async function DayDetailPage({ params }: DayDetailPageProps) {
   return (
     <main className="mx-auto max-w-4xl px-4 py-10 text-slate-100">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold">
-          Day Detail – {day.date}
-        </h1>
+        <h1 className="text-3xl font-bold">Day Detail – {day.date}</h1>
         {summary && (
           <p className="mt-2 text-slate-300">
             {summary}
@@ -294,7 +286,9 @@ function MetricCard({ label, value, unit }: MetricCardProps) {
       <div className="text-xs text-slate-400">{label}</div>
       <div className="mt-1 text-xl font-semibold text-slate-50">
         {value}
-        {unit ? <span className="ml-1 text-sm text-slate-400">{unit}</span> : null}
+        {unit ? (
+          <span className="ml-1 text-sm text-slate-400">{unit}</span>
+        ) : null}
       </div>
     </div>
   );

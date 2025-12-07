@@ -183,7 +183,7 @@ export default async function DashboardPage() {
                   >
                     <td className="px-4 py-2 align-top">
                     <Link
-                        href={`/day/${d.date}`} // 👈 use date as slug now
+                        href={`/day/${d.id}`} // 👈 use id as slug now
                         className="font-medium text-emerald-300 hover:text-emerald-200"
                     >
                         {formatDate(d.date)}
