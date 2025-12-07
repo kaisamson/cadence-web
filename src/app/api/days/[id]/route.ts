@@ -4,19 +4,16 @@ import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const OWNER_ID = process.env.OWNER_ID;
 
-type RouteContext = {
-  params: {
-    id: string;
-  };
-};
-
 function isUuid(value: string): boolean {
   return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
     value
   );
 }
 
-export async function GET(req: NextRequest, context: RouteContext) {
+export async function GET(
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> } // 👈 params is a Promise in Next 16
+) {
   try {
     if (!OWNER_ID) {
       return NextResponse.json(
@@ -25,7 +22,8 @@ export async function GET(req: NextRequest, context: RouteContext) {
       );
     }
 
-    const dayId = context.params?.id;
+    const { id } = await context.params; // 👈 await the Promise
+    const dayId = id;
 
     if (!dayId) {
       return NextResponse.json(
@@ -83,14 +81,17 @@ export async function GET(req: NextRequest, context: RouteContext) {
       transcript: string;
       summary: string | null;
       suggestions: string[] | null;
-      metrics: null | {
-        productive_hours: number | null;
-        neutral_hours: number | null;
-        wasted_hours: number | null;
-        sleep_hours: number | null;
-        focus_blocks: number | null;
-        context_switches: number | null;
-      } | Array<any>;
+      metrics:
+        | null
+        | {
+            productive_hours: number | null;
+            neutral_hours: number | null;
+            wasted_hours: number | null;
+            sleep_hours: number | null;
+            focus_blocks: number | null;
+            context_switches: number | null;
+          }
+        | any[];
     };
 
     const rawMetrics = rawDay.metrics;
