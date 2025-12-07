@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const OWNER_ID = process.env.OWNER_ID!;
