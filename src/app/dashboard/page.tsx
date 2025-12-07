@@ -182,19 +182,20 @@ export default async function DashboardPage() {
                     className="border-t border-slate-800/80 hover:bg-slate-800/60"
                   >
                     <td className="px-4 py-2 align-top">
-                      <Link
-                        href={`/day/${d.id}`}
+                    <Link
+                        href={`/day/${d.date}`} // 👈 use date as slug now
                         className="font-medium text-emerald-300 hover:text-emerald-200"
-                      >
+                    >
                         {formatDate(d.date)}
-                      </Link>
-                      <div className="text-xs text-slate-500">
+                    </Link>
+                    <div className="text-xs text-slate-500">
                         {new Date(d.created_at).toLocaleTimeString("en-CA", {
-                          hour: "2-digit",
-                          minute: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
                         })}
-                      </div>
+                    </div>
                     </td>
+
                     <td className="px-4 py-2 align-top max-w-xs">
                       <div className="line-clamp-3 text-slate-200">
                         {d.summary ?? "No summary"}
