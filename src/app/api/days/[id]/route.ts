@@ -2,9 +2,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
-const OWNER_ID = process.env.OWNER_ID!;
+const OWNER_ID = process.env.OWNER_ID;
 
-export async function GET(req: NextRequest, context: any) {
+type RouteContext = {
+  params: {
+    id: string;
+  };
+};
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+    value
+  );
+}
+
+export async function GET(req: NextRequest, context: RouteContext) {
   try {
     if (!OWNER_ID) {
       return NextResponse.json(
@@ -13,10 +25,18 @@ export async function GET(req: NextRequest, context: any) {
       );
     }
 
-    const dayId: string = context?.params?.id;
+    const dayId = context.params?.id;
+
     if (!dayId) {
       return NextResponse.json(
         { error: "Missing day id" },
+        { status: 400 }
+      );
+    }
+
+    if (!isUuid(dayId)) {
+      return NextResponse.json(
+        { error: "Invalid day id" },
         { status: 400 }
       );
     }
@@ -57,12 +77,25 @@ export async function GET(req: NextRequest, context: any) {
       );
     }
 
-    const rawDay: any = dayRow;
-    const rawMetrics = rawDay.metrics;
+    const rawDay = dayRow as {
+      id: string;
+      date: string;
+      transcript: string;
+      summary: string | null;
+      suggestions: string[] | null;
+      metrics: null | {
+        productive_hours: number | null;
+        neutral_hours: number | null;
+        wasted_hours: number | null;
+        sleep_hours: number | null;
+        focus_blocks: number | null;
+        context_switches: number | null;
+      } | Array<any>;
+    };
 
-    const metrics = Array.isArray(rawMetrics)
-      ? rawMetrics[0] ?? null
-      : rawMetrics ?? null;
+    const rawMetrics = rawDay.metrics;
+    const metrics =
+      Array.isArray(rawMetrics) ? rawMetrics[0] ?? null : rawMetrics ?? null;
 
     // 2) Fetch events
     const { data: eventRows, error: eventsError } = await supabaseAdmin
@@ -86,14 +119,15 @@ export async function GET(req: NextRequest, context: any) {
       throw eventsError;
     }
 
-    const events = (eventRows ?? []).map((e: any) => ({
-      id: e.id,
-      label: e.label,
-      category: e.category,
-      startTime: e.start_time,
-      endTime: e.end_time,
-      notes: e.notes,
-    }));
+    const events =
+      (eventRows ?? []).map((e) => ({
+        id: e.id as string,
+        label: e.label as string,
+        category: e.category as string,
+        startTime: (e.start_time as string | null) ?? null,
+        endTime: (e.end_time as string | null) ?? null,
+        notes: (e.notes as string | null) ?? null,
+      })) ?? [];
 
     // 3) Shape response similar to DayAnalysis
     const response = {
@@ -115,13 +149,18 @@ export async function GET(req: NextRequest, context: any) {
       events,
     };
 
-    return NextResponse.json(response);
-  } catch (err: any) {
+    return NextResponse.json(response, { status: 200 });
+  } catch (err: unknown) {
+    const message =
+      err && typeof err === "object" && "message" in err
+        ? String((err as any).message)
+        : String(err);
+
     console.error("day detail error", err);
     return NextResponse.json(
       {
         error: "Internal error",
-        details: err?.message ?? String(err),
+        details: message,
       },
       { status: 500 }
     );
