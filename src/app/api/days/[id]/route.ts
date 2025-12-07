@@ -1,12 +1,10 @@
+// app/api/days/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
 const OWNER_ID = process.env.OWNER_ID!;
 
-export async function GET(
-  _req: NextRequest,
-  context: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, context: any) {
   try {
     if (!OWNER_ID) {
       return NextResponse.json(
@@ -15,7 +13,13 @@ export async function GET(
       );
     }
 
-    const dayId = context.params.id;
+    const dayId: string = context?.params?.id;
+    if (!dayId) {
+      return NextResponse.json(
+        { error: "Missing day id" },
+        { status: 400 }
+      );
+    }
 
     // 1) Fetch day + metrics
     const { data: dayRow, error: dayError } = await supabaseAdmin
@@ -53,7 +57,9 @@ export async function GET(
       );
     }
 
-    const rawMetrics = dayRow.metrics;
+    const rawDay: any = dayRow;
+    const rawMetrics = rawDay.metrics;
+
     const metrics = Array.isArray(rawMetrics)
       ? rawMetrics[0] ?? null
       : rawMetrics ?? null;
@@ -80,7 +86,7 @@ export async function GET(
       throw eventsError;
     }
 
-    const events = (eventRows ?? []).map((e) => ({
+    const events = (eventRows ?? []).map((e: any) => ({
       id: e.id,
       label: e.label,
       category: e.category,
@@ -91,11 +97,11 @@ export async function GET(
 
     // 3) Shape response similar to DayAnalysis
     const response = {
-      id: dayRow.id,
-      date: dayRow.date,
-      transcript: dayRow.transcript,
-      summary: dayRow.summary,
-      suggestions: dayRow.suggestions ?? [],
+      id: rawDay.id,
+      date: rawDay.date,
+      transcript: rawDay.transcript,
+      summary: rawDay.summary,
+      suggestions: rawDay.suggestions ?? [],
       metrics: metrics
         ? {
             productiveHours: Number(metrics.productive_hours ?? 0),
