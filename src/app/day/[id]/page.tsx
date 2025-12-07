@@ -36,6 +36,9 @@ type DayWithEvents = {
 
 async function getDay(id: string): Promise<DayWithEvents | null> {
   if (!OWNER_ID) throw new Error("OWNER_ID not set");
+  if (!id || id === "undefined") {
+    return null;
+  }
 
   // Fetch the day + metrics
   const { data: dayData, error: dayError } = await supabaseAdmin

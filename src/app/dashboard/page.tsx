@@ -1,6 +1,8 @@
+// app/dashboard/page.tsx
 export const dynamic = "force-dynamic";
 
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import Link from "next/link";
 
 const OWNER_ID = process.env.OWNER_ID!;
 
@@ -54,8 +56,6 @@ async function getDays(): Promise<DayRow[]> {
     throw error;
   }
 
-  // Supabase often returns nested relations as arrays.
-  // Here we normalize metrics to a single object or null.
   const rows = (data ?? []) as any[];
 
   const normalized: DayRow[] = rows.map((row) => {
@@ -77,9 +77,7 @@ async function getDays(): Promise<DayRow[]> {
   return normalized;
 }
 
-
 function formatDate(dateStr: string) {
-  // dateStr is like "2025-12-07"
   const date = new Date(dateStr + "T00:00:00");
   return date.toLocaleDateString("en-CA", {
     year: "numeric",
@@ -151,7 +149,7 @@ export default async function DashboardPage() {
                   Suggestions
                 </h3>
                 <ul className="mt-1 space-y-1 text-sm text-slate-200">
-                  {latest.suggestions.map((s, i) => (
+                  {latest.suggestions.map((s: string, i: number) => (
                     <li key={i} className="flex gap-2">
                       <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
                       <span>{s}</span>
@@ -164,9 +162,7 @@ export default async function DashboardPage() {
         )}
 
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-slate-300">
-            History
-          </h2>
+          <h2 className="text-sm font-semibold text-slate-300">History</h2>
           <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900/60">
             <table className="min-w-full text-left text-sm">
               <thead className="bg-slate-900/80 text-xs uppercase text-slate-400">
@@ -186,9 +182,12 @@ export default async function DashboardPage() {
                     className="border-t border-slate-800/80 hover:bg-slate-800/60"
                   >
                     <td className="px-4 py-2 align-top">
-                      <div className="font-medium">
+                      <Link
+                        href={`/day/${d.id}`}
+                        className="font-medium text-emerald-300 hover:text-emerald-200"
+                      >
                         {formatDate(d.date)}
-                      </div>
+                      </Link>
                       <div className="text-xs text-slate-500">
                         {new Date(d.created_at).toLocaleTimeString("en-CA", {
                           hour: "2-digit",
