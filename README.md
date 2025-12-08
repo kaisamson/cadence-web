@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🕒 Cadence — Own Your Time  
+**AI-Powered Personal Time Optimization (iOS + Web Ecosystem)**  
+Built by **Kai Samson**
 
-## Getting Started
+Cadence is a life-optimization system that transforms your end-of-day voice recap into a structured timeline, productivity analytics, and personalized coaching recommendations.  
 
-First, run the development server:
+The goal: **help ambitious people understand how they spend their days, find inefficiencies, and operate at their highest potential.**
+
+---
+
+## ✨ Features
+
+### 🎙️ **Voice → Timeline (On-Device Whisper) IOS**
+Record a short recap of your day.  
+Cadence uses on-device Whisper transcription to convert audio into structured natural language.
+
+### 🧠 **AI-Powered Daily Breakdown**
+A lightweight LLM interprets the transcript and generates:
+- A chronological timeline of your day  
+- Categorized activities (work, school, recovery, fitness, overhead, wasted time)  
+- Productivity gaps + inefficiencies  
+- Personalized optimization suggestions  
+
+### 📅 **Daily Log Storage**
+Your days sync across:
+- The **iOS app**
+- The **web dashboard** (Next.js)
+
+Stored using:
+- **Supabase Postgres** for logs
+- **Secure user auth** on both platforms
+
+### 📊 **Metrics & Insights**
+Cadence gives you:
+- Total focused hours  
+- Time wasted  
+- Deep work percentage  
+- Sleep / recovery balance  
+- Consistency tracking  
+- Weekly improvement prompts  
+
+### 🖥️ **Web Dashboard**
+View timelines, trends, analytics, and AI reports from any device.
+
+### 🍎 **iOS App**
+Built in **SwiftUI**, using:
+- On-device Whisper
+- On-device or API-based LLM prompt pipelines
+- Local caching + Cloud sync
+- A premium, futuristic UX inspired by founder tools
+
+---
+
+## 🛠 Tech Stack
+
+### **iOS**
+- Swift / SwiftUI  
+- Whisper (on-device transcription)  
+- Local LLM / cloud LLM fallback  
+- Supabase Auth  
+- Postgres write-back  
+- Offline-first caching  
+
+### **Web**
+- Next.js 15+  
+- React Server Components  
+- TailwindCSS  
+- Supabase Postgres  
+- Edge functions (optional)  
+- Vercel deployment  
+
+### **AI**
+- Whisper → LLM → Structured JSON
+- NOTE : Install whisper model first if on iOS
+- Custom prompting for timeline + insights
+
+---
+
+## 📦 Installation (Web)
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
