@@ -1,5 +1,9 @@
 // app/day/[id]/page.tsx
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { supabaseAdmin } from "@/lib/supabaseAdmin";
+
 import { getDayById, isUuid, type DayDetail, type Metrics } from "@/lib/getDayById";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +11,14 @@ export const dynamic = "force-dynamic";
 type DayDetailPageProps = {
   params: Promise<{ id: string }>;
 };
+
+async function requireAuthForDay(path: string) {
+  const cookieStore = await cookies();
+  const auth = cookieStore.get("cadence_auth");
+  if (auth?.value !== "1") {
+    redirect(`/login?from=${encodeURIComponent(path)}`);
+  }
+}
 
 export async function generateMetadata(
   props: DayDetailPageProps
@@ -18,8 +30,12 @@ export async function generateMetadata(
 }
 
 export default async function DayDetailPage(props: DayDetailPageProps) {
+
   const { id } = await props.params;
+  await requireAuthForDay(`/day/${id}`); // ⬅️ check cookie first
   const day = await getDayById(id);
+
+
 
   if (!day) {
     return (

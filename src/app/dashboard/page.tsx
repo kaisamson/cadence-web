@@ -1,6 +1,6 @@
 // app/dashboard/page.tsx
-export const dynamic = "force-dynamic";
-
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import Link from "next/link";
 
@@ -23,6 +23,16 @@ type DayRow = {
   created_at: string;
   metrics: MetricsRow | null;
 };
+
+export const dynamic = "force-dynamic";
+
+async function requireAuthForDashboard() {
+  const cookieStore = await cookies();
+  const auth = cookieStore.get("cadence_auth");
+  if (auth?.value !== "1") {
+    redirect("/login?from=/dashboard");
+  }
+}
 
 async function getDays(): Promise<DayRow[]> {
   if (!OWNER_ID) {
@@ -92,6 +102,9 @@ function formatHours(value: number | null | undefined) {
 }
 
 export default async function DashboardPage() {
+  // 🔐 Require password before any Supabase access
+  await requireAuthForDashboard();
+
   const days = await getDays();
 
   const latest = days[0];
@@ -182,18 +195,18 @@ export default async function DashboardPage() {
                     className="border-t border-slate-800/80 hover:bg-slate-800/60"
                   >
                     <td className="px-4 py-2 align-top">
-                    <Link
-                        href={`/day/${d.id}`} // 👈 use id as slug now
+                      <Link
+                        href={`/day/${d.id}`}
                         className="font-medium text-emerald-300 hover:text-emerald-200"
-                    >
+                      >
                         {formatDate(d.date)}
-                    </Link>
-                    <div className="text-xs text-slate-500">
+                      </Link>
+                      <div className="text-xs text-slate-500">
                         {new Date(d.created_at).toLocaleTimeString("en-CA", {
-                        hour: "2-digit",
-                        minute: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
                         })}
-                    </div>
+                      </div>
                     </td>
 
                     <td className="px-4 py-2 align-top max-w-xs">

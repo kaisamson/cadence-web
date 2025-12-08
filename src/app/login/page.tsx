@@ -1,4 +1,3 @@
-// app/login/page.tsx
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -10,7 +9,6 @@ async function login(formData: FormData) {
   const password = formData.get("password");
   const from = (formData.get("from") as string | null) ?? "/dashboard";
 
-  const DASHBOARD_PASSWORD = process.env.CADENCE_DASHBOARD_PASSWORD;
   if (!DASHBOARD_PASSWORD) {
     throw new Error("CADENCE_DASHBOARD_PASSWORD not set");
   }
@@ -19,7 +17,6 @@ async function login(formData: FormData) {
     redirect("/login?error=1");
   }
 
-  // FIX: cookies() must be awaited.
   const cookieStore = await cookies();
 
   cookieStore.set("cadence_auth", "1", {
@@ -27,12 +24,11 @@ async function login(formData: FormData) {
     secure: true,
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 30, // 30 days
+    maxAge: 60 * 60 * 24 * 30,
   });
 
   redirect(from);
 }
-
 
 export default async function LoginPage({
   searchParams,
