@@ -2,9 +2,12 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import Link from "next/link";
 
-import { getDayById, isUuid, type DayDetail, type Metrics } from "@/lib/getDayById";
+import { getDayById, isUuid } from "@/lib/getDayById";
+import DayEditor from "./DayEditor";
+import { DeleteDayButton } from "./DeleteDayButton";
+
 
 export const dynamic = "force-dynamic";
 
@@ -30,12 +33,9 @@ export async function generateMetadata(
 }
 
 export default async function DayDetailPage(props: DayDetailPageProps) {
-
   const { id } = await props.params;
-  await requireAuthForDay(`/day/${id}`); // ⬅️ check cookie first
+  await requireAuthForDay(`/day/${id}`);
   const day = await getDayById(id);
-
-
 
   if (!day) {
     return (
@@ -45,6 +45,14 @@ export default async function DayDetailPage(props: DayDetailPageProps) {
           Check that the URL contains a valid day id, or go back to the
           dashboard.
         </p>
+        <div className="mt-4">
+          <Link
+            href="/dashboard"
+            className="text-sm text-sky-300 hover:text-sky-200"
+          >
+            ← Back to dashboard
+          </Link>
+        </div>
       </main>
     );
   }
@@ -53,10 +61,25 @@ export default async function DayDetailPage(props: DayDetailPageProps) {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10 text-slate-100">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold">Day Detail – {day.date}</h1>
-        {summary && <p className="mt-2 text-slate-300">{summary}</p>}
+      <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Day Detail – {day.date}</h1>
+          {summary && <p className="mt-2 text-slate-300">{summary}</p>}
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <Link
+            href="/dashboard"
+            className="self-start rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs text-slate-100 hover:border-emerald-500 hover:text-emerald-300"
+          >
+            ← Back to dashboard
+          </Link>
+          <DeleteDayButton dayId={day.id} />
+        </div>
       </header>
+
+
+      {/* 🔊 Speech + edit bar at the top */}
+      <DayEditor date={day.date} />
 
       {suggestions && suggestions.length > 0 && (
         <section className="mb-8 rounded-lg border border-emerald-500/20 bg-slate-900/60 p-4">
@@ -111,31 +134,62 @@ export default async function DayDetailPage(props: DayDetailPageProps) {
             No events recorded for this day.
           </p>
         ) : (
-          <ul className="space-y-3">
-            {events.map((ev) => (
-              <li
-                key={ev.id}
-                className="flex flex-col gap-1 rounded-md bg-slate-900/80 p-3 text-sm"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-medium text-slate-100">
-                    {ev.label}
-                  </span>
-                  <span className="rounded-full bg-slate-800 px-2 py-0.5 text-xs uppercase tracking-wide text-slate-300">
-                    {ev.category}
-                  </span>
-                </div>
-                <div className="text-xs text-slate-400">
-                  {ev.start_time && ev.end_time
-                    ? `${ev.start_time} – ${ev.end_time}`
-                    : ev.start_time || ev.end_time || "Time unknown"}
-                </div>
-                {ev.notes && (
-                  <p className="text-xs text-slate-300">{ev.notes}</p>
-                )}
-              </li>
-            ))}
-          </ul>
+          <div className="relative">
+            {/* vertical line */}
+            <div className="pointer-events-none absolute left-[10px] top-0 bottom-0 w-px bg-slate-700" />
+            <ul className="space-y-4">
+              {events.map((ev) => (
+                <li key={ev.id} className="relative pl-8">
+                  {/* dot */}
+                  <div className="absolute left-[6px] top-2 h-3 w-3 rounded-full bg-emerald-400 shadow-[0_0_0_3px_rgba(16,185,129,0.3)]" />
+
+                  <div className="flex gap-3">
+                    {/* time column */}
+                    <div className="w-24 shrink-0 text-[11px] text-slate-400">
+                      {ev.start_time && ev.end_time
+                        ? `${ev.start_time}–${ev.end_time}`
+                        : ev.start_time || ev.end_time || "Time?"}
+                    </div>
+
+                    {/* event card */}
+                    <div className="flex-1 rounded-md border border-slate-800 bg-slate-900/80 p-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium text-slate-100">
+                          {ev.label}
+                        </span>
+                        <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wide ${
+                          ev.category === "productive"
+                            ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/40"
+                            : ev.category === "sleep"
+                            ? "bg-sky-500/10 text-sky-300 border border-sky-500/40"
+                            : ev.category === "waste"
+                            ? "bg-red-500/10 text-red-300 border border-red-500/40"
+                            : ev.category === "untracked"
+                            ? "bg-slate-500/20 text-slate-200 border border-slate-500/60"
+                            : "bg-slate-500/10 text-slate-300 border border-slate-500/40"
+                        }`}
+                      >
+                        {ev.category}
+                      </span>
+
+                      </div>
+                      <div className="mt-0.5 text-[11px] text-slate-400">
+                        {ev.start_time && ev.end_time
+                          ? `${ev.start_time}–${ev.end_time}`
+                          : ev.start_time || ev.end_time || "Time unknown"}
+                      </div>
+                      {ev.notes && (
+                        <p className="mt-1 text-[11px] text-slate-300">
+                          {ev.notes}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </section>
 

@@ -1,14 +1,14 @@
 // app/api/days/route.ts
 
-import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { verifyClientApiKey } from "@/lib/apiAuth";
+import { NextRequest, NextResponse } from "next/server";
+import { verifyRequestAuthorized } from "@/lib/apiAuth";
 
 const OWNER_ID = process.env.OWNER_ID;
 
 export async function GET(req: NextRequest) {
   try {
-    if (!verifyClientApiKey(req)) {
+    if (!verifyRequestAuthorized(req)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
