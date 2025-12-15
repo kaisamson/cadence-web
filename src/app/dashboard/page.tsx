@@ -32,6 +32,29 @@ type DashboardPrefsRow = {
 export const dynamic = "force-dynamic";
 
 /* ======================================================================
+   Theme helpers (NO tailwind config needed)
+   - Accent: white
+   - Background: black
+   - Cards: near-black
+   ====================================================================== */
+
+const UI = {
+  pageBg: "bg-black text-white",
+  card: "rounded-xl border border-white/10 bg-white/[0.04]",
+  card2: "rounded-xl border border-white/10 bg-white/[0.06]",
+  cardGhost: "rounded-xl border border-dashed border-white/15 bg-white/[0.02]",
+  muted: "text-white/60",
+  subtle: "text-white/45",
+  hairline: "border-white/10",
+  hoverRing: "hover:border-white/25",
+  link: "text-white/85 hover:text-white",
+  pillBtn:
+    "inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 hover:border-white/25 hover:text-white",
+  focusDot: "bg-white/80",
+  accentText: "text-white",
+};
+
+/* ======================================================================
    Auth + data
    ====================================================================== */
 
@@ -289,20 +312,19 @@ function LineChartCard(props: {
   const hasData = values.some((v) => v != null);
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4">
+    <div className={`${UI.card} p-4`}>
       <div className="flex items-baseline justify-between gap-2">
         <div>
-          <h2 className="text-sm font-semibold text-slate-200">{title}</h2>
-          {subtitle && (
-            <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>
-          )}
+          <h2 className="text-sm font-semibold text-white/90">{title}</h2>
+          {subtitle && <p className={`mt-0.5 text-xs ${UI.muted}`}>{subtitle}</p>}
         </div>
+
         {averageLabel && (
           <div className="text-right">
-            <div className="text-[10px] uppercase tracking-wide text-slate-400">
+            <div className={`text-[10px] uppercase tracking-wide ${UI.subtle}`}>
               {averageLabel}
             </div>
-            <div className="text-lg font-semibold text-emerald-300">
+            <div className={`text-lg font-semibold ${UI.accentText}`}>
               {averageValue != null
                 ? `${averageValue.toFixed(1)}${unit ?? ""}`
                 : "-"}
@@ -323,16 +345,16 @@ function LineChartCard(props: {
               y1="90"
               x2="100"
               y2="90"
-              className="stroke-slate-700"
+              className="stroke-white/10"
               strokeWidth={0.5}
             />
             <polyline
               points={`0,90 ${points} 100,90`}
-              className="fill-emerald-500/10 stroke-none"
+              className="fill-white/10 stroke-none"
             />
             <polyline
               points={points}
-              className="fill-none stroke-emerald-400"
+              className="fill-none stroke-white/80"
               strokeWidth={1.5}
               strokeLinejoin="round"
               strokeLinecap="round"
@@ -348,19 +370,19 @@ function LineChartCard(props: {
                   cx={x}
                   cy={y}
                   r={1.6}
-                  className="fill-emerald-300"
+                  className="fill-white"
                 />
               );
             })}
           </svg>
         ) : (
-          <div className="flex h-full items-center justify-center text-xs text-slate-500">
+          <div className={`flex h-full items-center justify-center text-xs ${UI.muted}`}>
             Not enough data yet.
           </div>
         )}
       </div>
 
-      <div className="mt-2 flex justify-between text-[10px] text-slate-500">
+      <div className={`mt-2 flex justify-between text-[10px] ${UI.muted}`}>
         {dates.map((d, i) => {
           const label = d.slice(5); // MM-DD
           return (
@@ -386,7 +408,6 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-
   await requireAuthForDashboard();
 
   const sp = await searchParams;
@@ -415,15 +436,12 @@ export default async function DashboardPage({
   });
 
   // Only count days that actually have sleep logged (> 0)
-  const sleepValid = sleepValues.filter(
-    (v) => v != null && v > 0
-  ) as number[];
+  const sleepValid = sleepValues.filter((v) => v != null && v > 0) as number[];
 
   const avgSleepLast14 =
     sleepValid.length > 0
       ? sleepValid.reduce((a, b) => a + b, 0) / sleepValid.length
       : null;
-
 
   const ratioValues = last14Dates.map((dateStr) => {
     const d = dayByDate.get(dateStr);
@@ -433,6 +451,7 @@ export default async function DashboardPage({
     if (waste === 0) return prod === 0 ? 0 : prod;
     return prod / waste;
   });
+
   const ratioValid = ratioValues.filter((v) => v != null) as number[];
   const avgRatioLast14 =
     ratioValid.length > 0
@@ -461,11 +480,9 @@ export default async function DashboardPage({
   }
 
   const weekDates = getWeekDatesFromMondayAnchor(anchorMonday);
-  const weekRangeLabel = `${formatShortDate(
-    weekDates[0].dateStr
-  )} – ${formatShortDate(weekDates[6].dateStr)}`;
-
-  const anchorMondayStr = toDateStr(anchorMonday);
+  const weekRangeLabel = `${formatShortDate(weekDates[0].dateStr)} – ${formatShortDate(
+    weekDates[6].dateStr
+  )}`;
 
   const prevWeekMonday = new Date(anchorMonday);
   prevWeekMonday.setDate(anchorMonday.getDate() - 7);
@@ -474,10 +491,6 @@ export default async function DashboardPage({
   const nextWeekMonday = new Date(anchorMonday);
   nextWeekMonday.setDate(anchorMonday.getDate() + 7);
   const nextWeekStr = toDateStr(nextWeekMonday);
-
-  //const canGoForward = anchorMonday.getTime() < currentWeekMonday.getTime();
-  //^ Disabled, but enable if you want to prevent navigating into future weeks
-  const canGoForward = true;
 
   const pinnedFromDb = await getDashboardPrefs();
 
@@ -497,16 +510,13 @@ export default async function DashboardPage({
     {
       key: "avgSleep14",
       label: "Avg sleep (14d)",
-      valueLabel:
-        avgSleepLast14 != null ? `${avgSleepLast14.toFixed(1)}h` : "–",
+      valueLabel: avgSleepLast14 != null ? `${avgSleepLast14.toFixed(1)}h` : "–",
       description: "Average nightly sleep over the last 14 days",
     },
     {
       key: "sn14",
       label: "Signal / Noise (14d)",
-      // MetricPillsBar should render this as something like "80 : 20" with green/red split
-      valueLabel:
-        avgRatioLast14 != null ? `${avgRatioLast14.toFixed(2)}x` : "–",
+      valueLabel: avgRatioLast14 != null ? `${avgRatioLast14.toFixed(2)}x` : "–",
       description: "Average productive-to-waste ratio over the last 14 days",
     },
     {
@@ -518,20 +528,16 @@ export default async function DashboardPage({
   ];
 
   const defaultPinned =
-    pinnedFromDb.length > 0
-      ? pinnedFromDb
-      : ["totalProductive", "avgSleep14", "gym7"];
-
-  
+    pinnedFromDb.length > 0 ? pinnedFromDb : ["totalProductive", "avgSleep14", "gym7"];
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 p-4">
+    <main className={`min-h-screen ${UI.pageBg} p-4`}>
       <div className="mx-auto max-w-5xl space-y-6">
         {/* HEADER */}
         <header className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold">Cadence Dashboard</h1>
-            <p className="text-sm text-slate-400">
+            <p className={`text-sm ${UI.muted}`}>
               Weekly view, recovery, and your signal-to-noise over time.
             </p>
           </div>
@@ -539,51 +545,47 @@ export default async function DashboardPage({
           <div className="flex flex-wrap items-end gap-3 text-sm">
             <Link
               href="/day/new"
-              className="rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-medium text-slate-100 hover:border-emerald-500 hover:text-emerald-300"
+              className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-white/90 hover:border-white/25 hover:text-white"
             >
               + New / Edit day
             </Link>
+
+            {/* Total productive (GREEN) */}
             <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2">
               <div className="text-xs uppercase tracking-wide text-emerald-300/80">
                 Total productive
               </div>
-              <div className="text-lg font-semibold">
+              <div className="text-lg font-semibold text-emerald-100">
                 {totalProductive.toFixed(1)}h
               </div>
             </div>
-            <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2">
-              <div className="text-xs uppercase tracking-wide text-red-300/80">
+
+            {/* Total wasted (RED) */}
+            <div className="rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2">
+              <div className="text-xs uppercase tracking-wide text-rose-300/80">
                 Total wasted
               </div>
-              <div className="text-lg font-semibold">
+              <div className="text-lg font-semibold text-rose-100">
                 {totalWasted.toFixed(1)}h
               </div>
             </div>
+
           </div>
         </header>
 
         {/* WEEK STRIP WITH NAV */}
-        <section className="rounded-xl border border-slate-800 bg-slate-900/60 p-4">
+        <section className={`${UI.card2} p-4`}>
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-semibold text-slate-200">
-                Week at a glance
-              </h2>
-              <span className="text-[11px] text-slate-500">
-                {weekRangeLabel}
-              </span>
-              {/* Optional tiny debug tag if you ever want it:
-              <span className="text-[10px] text-slate-600">
-                (anchor Monday: {anchorMondayStr})
-              </span>
-              */}
+              <h2 className="text-sm font-semibold text-white/90">Week at a glance</h2>
+              <span className={`text-[11px] ${UI.muted}`}>{weekRangeLabel}</span>
             </div>
 
             <div className="flex items-center gap-2 text-[11px]">
               <Link
                 href={`/dashboard?week=${prevWeekStr}`}
                 prefetch={false}
-                className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-900 px-2 py-1 hover:border-emerald-400 hover:text-emerald-200"
+                className={UI.pillBtn}
               >
                 <span>←</span>
                 <span>Prev</span>
@@ -592,12 +594,11 @@ export default async function DashboardPage({
               <Link
                 href={`/dashboard?week=${nextWeekStr}`}
                 prefetch={false}
-                className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-900 px-2 py-1 hover:border-emerald-400 hover:text-emerald-200"
+                className={UI.pillBtn}
               >
                 <span>Next</span>
                 <span>→</span>
               </Link>
-
             </div>
           </div>
 
@@ -612,30 +613,28 @@ export default async function DashboardPage({
                   className={[
                     "flex flex-col rounded-lg border px-2 py-2 transition-colors",
                     isToday
-                      ? "border-emerald-500/70 bg-emerald-500/10 shadow-[0_0_0_1px_rgba(16,185,129,0.4)]"
+                      ? "border-white/35 bg-white/[0.06] shadow-[0_0_0_1px_rgba(255,255,255,0.12)]"
                       : entry
-                      ? "border-slate-700 bg-slate-900/80 hover:border-emerald-400/60"
-                      : "border-slate-800 bg-slate-950/40 text-slate-500",
+                      ? "border-white/10 bg-white/[0.04] hover:border-white/25"
+                      : "border-white/10 bg-white/[0.02] text-white/50",
                   ].join(" ")}
                 >
                   <div className="flex items-baseline justify-between gap-1">
-                    <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                    <div className={`text-[10px] font-semibold uppercase tracking-wide ${UI.subtle}`}>
                       {dayName}
                     </div>
-                    <div className="text-[11px] text-slate-300">{label}</div>
+                    <div className="text-[11px] text-white/75">{label}</div>
                   </div>
 
                   {entry ? (
                     <Link
                       href={`/day/${entry.id}`}
-                      className="mt-1 line-clamp-3 text-[11px] text-slate-200 hover:text-emerald-200"
+                      className="mt-1 line-clamp-3 text-[11px] text-white/85 hover:text-white"
                     >
                       {entry.summary ?? "No summary"}
                     </Link>
                   ) : (
-                    <div className="mt-1 text-[11px] italic text-slate-500">
-                      No entry
-                    </div>
+                    <div className={`mt-1 text-[11px] italic ${UI.muted}`}>No entry</div>
                   )}
                 </div>
               );
@@ -645,54 +644,53 @@ export default async function DashboardPage({
 
         {/* METRIC CARDS UNDER WEEK */}
         <section>
-          <MetricPillsBar
-            metrics={metricPills}
-            defaultPinnedKeys={defaultPinned}
-          />
+          <MetricPillsBar metrics={metricPills} defaultPinnedKeys={defaultPinned} />
         </section>
 
         {/* METRIC CARDS + CHARTS */}
         <section className="grid gap-4 md:grid-cols-3">
           {/* Latest day – smaller card */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 md:col-span-1">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <div className={`${UI.card} p-4 md:col-span-1`}>
+            <h2 className={`text-xs font-semibold uppercase tracking-wide ${UI.subtle}`}>
               Latest day
             </h2>
+
             {latest ? (
               <>
-                <div className="mt-1 text-sm font-semibold text-slate-100">
+                <div className="mt-1 text-sm font-semibold text-white/90">
                   {formatDate(latest.date)}
                 </div>
-                <p className="mt-1 line-clamp-4 text-xs text-slate-300">
+
+                <p className="mt-1 line-clamp-4 text-xs text-white/75">
                   {latest.summary ?? "No summary available."}
                 </p>
+
                 {latest.suggestions && latest.suggestions.length > 0 && (
-                  <ul className="mt-2 space-y-1 text-[11px] text-slate-300">
+                  <ul className="mt-2 space-y-1 text-[11px] text-white/75">
                     {latest.suggestions.slice(0, 3).map((s, i) => (
                       <li key={i} className="flex gap-2">
-                        <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
+                        <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${UI.focusDot}`} />
                         <span className="line-clamp-2">{s}</span>
                       </li>
                     ))}
                     {latest.suggestions.length > 3 && (
-                      <li className="text-[10px] text-slate-500">
-                        + {latest.suggestions.length - 3} more suggestions on
-                        the day page
+                      <li className={`text-[10px] ${UI.muted}`}>
+                        + {latest.suggestions.length - 3} more suggestions on the day page
                       </li>
                     )}
                   </ul>
                 )}
+
                 <Link
                   href={`/day/${latest.id}`}
-                  className="mt-3 inline-flex items-center text-[11px] font-medium text-emerald-300 hover:text-emerald-200"
+                  className="mt-3 inline-flex items-center text-[11px] font-medium text-white/85 hover:text-white"
                 >
                   View full analysis →
                 </Link>
               </>
             ) : (
-              <p className="mt-2 text-xs text-slate-500">
-                No days analyzed yet. Go to the home page and run your first
-                recap.
+              <p className={`mt-2 text-xs ${UI.muted}`}>
+                No days analyzed yet. Go to the home page and run your first recap.
               </p>
             )}
           </div>
@@ -721,69 +719,55 @@ export default async function DashboardPage({
         {/* GYM + EXTRA METRICS */}
         <section className="grid gap-4 md:grid-cols-3">
           {/* Gym sessions last 7 days */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4">
-            <h2 className="text-sm font-semibold text-slate-200">
-              Gym sessions (last 7 days)
-            </h2>
-            <p className="mt-1 text-xs text-slate-500">
+          <div className={`${UI.card} p-4`}>
+            <h2 className="text-sm font-semibold text-white/90">Gym sessions (last 7 days)</h2>
+            <p className={`mt-1 text-xs ${UI.muted}`}>
               Based on events whose label starts with &quot;Gym&quot;.
             </p>
             <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-3xl font-semibold text-emerald-300">
-                {gymSessionsLast7}
-              </span>
-              <span className="text-xs text-slate-400">
+              <span className="text-3xl font-semibold text-white">{gymSessionsLast7}</span>
+              <span className={`text-xs ${UI.muted}`}>
                 {gymSessionsLast7 === 1 ? "session" : "sessions"}
               </span>
             </div>
           </div>
 
           {/* Focus blocks + context switches compact view */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4">
-            <h2 className="text-sm font-semibold text-slate-200">
-              Focus & context switching
-            </h2>
-            <p className="mt-1 text-xs text-slate-500">
-              Totals across all logged days.
-            </p>
+          <div className={`${UI.card} p-4`}>
+            <h2 className="text-sm font-semibold text-white/90">Focus & context switching</h2>
+            <p className={`mt-1 text-xs ${UI.muted}`}>Totals across all logged days.</p>
+
             <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
-              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3">
-                <div className="text-[10px] uppercase tracking-wide text-emerald-300/80">
+              <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                <div className={`text-[10px] uppercase tracking-wide ${UI.subtle}`}>
                   Focus blocks
                 </div>
-                <div className="mt-1 text-xl font-semibold text-emerald-200">
-                  {days.reduce(
-                    (sum, d) => sum + (d.metrics?.focus_blocks ?? 0),
-                    0
-                  )}
+                <div className="mt-1 text-xl font-semibold text-white/90">
+                  {days.reduce((sum, d) => sum + (d.metrics?.focus_blocks ?? 0), 0)}
                 </div>
               </div>
-              <div className="rounded-lg border border-slate-700 bg-slate-900/80 p-3">
-                <div className="text-[10px] uppercase tracking-wide text-slate-300/80">
+
+              <div className="rounded-lg border border-white/10 bg-white/[0.04] p-3">
+                <div className={`text-[10px] uppercase tracking-wide ${UI.subtle}`}>
                   Context switches
                 </div>
-                <div className="mt-1 text-xl font-semibold text-slate-100">
-                  {days.reduce(
-                    (sum, d) => sum + (d.metrics?.context_switches ?? 0),
-                    0
-                  )}
+                <div className="mt-1 text-xl font-semibold text-white/90">
+                  {days.reduce((sum, d) => sum + (d.metrics?.context_switches ?? 0), 0)}
                 </div>
               </div>
             </div>
           </div>
 
           {/* Placeholder for future metrics */}
-          <div className="rounded-xl border border-dashed border-slate-700 bg-slate-950/60 p-4">
-            <h2 className="text-sm font-semibold text-slate-300">
-              Next metrics to unlock
-            </h2>
-            <p className="mt-2 text-xs text-slate-500">
-              Track more dimensions of your day – deep work streaks, average
-              start time, or time-to-first-task.
+          <div className={`${UI.cardGhost} p-4`}>
+            <h2 className="text-sm font-semibold text-white/80">Next metrics to unlock</h2>
+            <p className={`mt-2 text-xs ${UI.muted}`}>
+              Track more dimensions of your day – deep work streaks, average start time, or
+              time-to-first-task.
             </p>
-            <p className="mt-2 text-[11px] text-slate-500">
-              We can extend the LLM prompt + schema to compute these and store
-              them alongside your existing metrics.
+            <p className={`mt-2 text-[11px] ${UI.muted}`}>
+              We can extend the LLM prompt + schema to compute these and store them alongside your
+              existing metrics.
             </p>
           </div>
         </section>

@@ -64,16 +64,16 @@ export function MetricPillsBar({
       if (!isNaN(ratio) && ratio >= 0) {
         // Signal = productive, Noise = waste
         const signalShare = ratio / (ratio + 1); // prod / (prod + waste)
-        const noiseShare = 1 / (ratio + 1);
 
+        // Keep sums to 100 reliably
         const signalPct = Math.round(signalShare * 100);
-        const noisePct = Math.round(noiseShare * 100);
+        const noisePct = Math.max(0, 100 - signalPct);
 
         return (
           <span className="mt-1 text-lg font-semibold">
             <span className="text-emerald-300">{signalPct}</span>
-            <span className="text-slate-500"> : </span>
-            <span className="text-rose-400">{noisePct}</span>
+            <span className="text-white/45"> : </span>
+            <span className="text-rose-300">{noisePct}</span>
           </span>
         );
       }
@@ -81,7 +81,7 @@ export function MetricPillsBar({
 
     // Default rendering for all other metrics
     return (
-      <span className="mt-1 text-lg font-semibold text-slate-100">
+      <span className="mt-1 text-lg font-semibold text-white">
         {metric.valueLabel}
       </span>
     );
@@ -94,25 +94,27 @@ export function MetricPillsBar({
       onClick={() => togglePin(metric.key)}
       className={[
         "flex flex-col items-start rounded-lg border p-3 text-left transition",
-        "bg-slate-900/70 hover:bg-slate-900",
+        "bg-white/[0.04] hover:bg-white/[0.06]",
         isPinned
-          ? "border-emerald-500/60 shadow-md shadow-emerald-500/10"
-          : "border-slate-700",
+          ? "border-white/30 shadow-md shadow-white/10"
+          : "border-white/10 hover:border-white/25",
       ].join(" ")}
     >
       <div className="flex w-full items-baseline justify-between gap-2">
         <div className="flex flex-col">
-          <span className="text-[10px] uppercase tracking-wide text-slate-400">
+          <span className="text-[10px] uppercase tracking-wide text-white/55">
             {metric.label}
           </span>
           {renderValue(metric)}
         </div>
-        <span className="text-[10px] rounded-full border border-slate-700 px-2 py-0.5 text-slate-400">
+
+        <span className="text-[10px] rounded-full border border-white/10 bg-white/[0.03] px-2 py-0.5 text-white/60">
           {isPinned ? "Pinned" : "Pin"}
         </span>
       </div>
+
       {metric.description && (
-        <p className="mt-1 text-[11px] text-slate-500 line-clamp-2">
+        <p className="mt-1 line-clamp-2 text-[11px] text-white/55">
           {metric.description}
         </p>
       )}
@@ -125,14 +127,15 @@ export function MetricPillsBar({
       {pinned.length > 0 && (
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <span className="text-[11px] uppercase tracking-wide text-slate-400">
+            <span className="text-[11px] uppercase tracking-wide text-white/55">
               Key metrics
             </span>
-            <span className="text-[10px] text-slate-500">
+            <span className="text-[10px] text-white/45">
               Tap a card to pin / unpin
               {saving && " · saving..."}
             </span>
           </div>
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
             {pinned.map((m) => renderMetricCard(m, true))}
           </div>
@@ -142,9 +145,10 @@ export function MetricPillsBar({
       {/* Other metrics */}
       {unpinned.length > 0 && (
         <div>
-          <div className="mb-1 text-[11px] uppercase tracking-wide text-slate-400">
+          <div className="mb-1 text-[11px] uppercase tracking-wide text-white/55">
             More metrics
           </div>
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
             {unpinned.map((m) => renderMetricCard(m, false))}
           </div>

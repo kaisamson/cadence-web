@@ -17,7 +17,7 @@ type UiEvent = {
   label: string;
   category: string;
   start: string; // HH:MM
-  end: string;   // HH:MM
+  end: string; // HH:MM
   notes?: string | null;
 };
 
@@ -80,8 +80,7 @@ function groupEventsForTimeline(events: RawEvent[]) {
     }
 
     const startM = timeToMinutes(e.start);
-    const isBetweenMidnightAnd4 =
-      startM >= 0 && startM < 4 * 60; // 00:00–03:59
+    const isBetweenMidnightAnd4 = startM >= 0 && startM < 4 * 60; // 00:00–03:59
 
     // Legacy safety: if we ever had auto-carried notes in DB, still treat those as after midnight
     const isLegacyCarried =
@@ -121,11 +120,11 @@ export function DayTimeline({ events }: DayTimelineProps) {
       {/* MAIN SLEEP SECTION */}
       {mainSleep && (
         <section className="space-y-2">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-emerald-300">
-            <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-1 text-[10px] font-semibold">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-white/80">
+            <span className="rounded-full border border-white/20 bg-white/[0.04] px-2 py-1 text-[10px] font-semibold text-white/90">
               Main sleep
             </span>
-            <span className="text-[10px] text-slate-400">
+            <span className="text-[10px] text-white/45">
               Night before – counted toward this morning&apos;s sleep
             </span>
           </div>
@@ -137,7 +136,7 @@ export function DayTimeline({ events }: DayTimelineProps) {
       {daytimeEvents.length > 0 && (
         <section className="space-y-2">
           {!mainSleep && (
-            <div className="text-[10px] uppercase tracking-wide text-slate-400">
+            <div className="text-[10px] uppercase tracking-wide text-white/55">
               Day
             </div>
           )}
@@ -154,12 +153,12 @@ export function DayTimeline({ events }: DayTimelineProps) {
 
       {/* AFTER MIDNIGHT SECTION */}
       {afterMidnightEvents.length > 0 && (
-        <section className="space-y-2 pt-2 border-t border-slate-800/80">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-sky-300">
-            <span className="rounded-full border border-sky-500/40 bg-sky-500/10 px-2 py-1 text-[10px] font-semibold">
+        <section className="space-y-2 pt-2 border-t border-white/10">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-white/80">
+            <span className="rounded-full border border-white/20 bg-white/[0.04] px-2 py-1 text-[10px] font-semibold text-white/90">
               After midnight
             </span>
-            <span className="text-[10px] text-slate-400">
+            <span className="text-[10px] text-white/45">
               Late-night blocks between 00:00 and 04:00
             </span>
           </div>
@@ -178,38 +177,38 @@ export function DayTimeline({ events }: DayTimelineProps) {
 }
 
 /* --------------------------------------------------------------- */
-/* Simple event card (adjust to match your existing styling)       */
+/* Event card                                                       */
+/* - Main UI stays white/black
+/* - Category pills stay color-coded                               */
 /* --------------------------------------------------------------- */
 
-const categoryColors: Record<string, string> = {
-  productive: "bg-emerald-500/10 text-emerald-300 border-emerald-500/40",
-  neutral: "bg-slate-500/10 text-slate-200 border-slate-500/40",
-  waste: "bg-rose-500/10 text-rose-300 border-rose-500/40",
-  sleep: "bg-indigo-500/10 text-indigo-300 border-indigo-500/40",
-  untracked: "bg-amber-500/10 text-amber-300 border-amber-500/40",
+const categoryPillColors: Record<string, string> = {
+  productive: "bg-emerald-500/15 text-emerald-200 border-emerald-500/40",
+  neutral: "bg-slate-500/15 text-slate-200 border-slate-400/30",
+  waste: "bg-rose-500/15 text-rose-200 border-rose-500/40",
+  sleep: "bg-indigo-500/15 text-indigo-200 border-indigo-500/40",
+  untracked: "bg-amber-500/15 text-amber-200 border-amber-500/40",
 };
 
 function TimelineEventCard({ event }: { event: UiEvent }) {
-  const catKey = event.category ?? "neutral";
-  const categoryClass =
-    categoryColors[catKey] ?? categoryColors["neutral"];
+  const catKey = (event.category ?? "neutral").toLowerCase();
+  const pillClass = categoryPillColors[catKey] ?? categoryPillColors["neutral"];
 
   return (
-    <div className="flex gap-3 rounded-lg border border-slate-800 bg-slate-900/70 p-3">
-      <div className="mt-1 text-xs font-mono text-slate-400 w-16 shrink-0">
+    <div className="flex gap-3 rounded-lg border border-white/10 bg-white/[0.04] p-3">
+      <div className="mt-1 w-16 shrink-0 text-xs font-mono text-white/55">
         <div>{event.start}</div>
-        <div className="text-slate-500">→ {event.end}</div>
+        <div className="text-white/35">→ {event.end}</div>
       </div>
 
       <div className="flex-1 space-y-1">
         <div className="flex items-center justify-between gap-2">
-          <div className="text-sm font-medium text-slate-100">
-            {event.label}
-          </div>
+          <div className="text-sm font-medium text-white/90">{event.label}</div>
+
           <span
             className={
               "rounded-full border px-2 py-[2px] text-[10px] font-semibold " +
-              categoryClass
+              pillClass
             }
           >
             {event.category}
@@ -217,7 +216,7 @@ function TimelineEventCard({ event }: { event: UiEvent }) {
         </div>
 
         {event.notes && (
-          <p className="text-[11px] text-slate-400 whitespace-pre-line">
+          <p className="whitespace-pre-line text-[11px] text-white/55">
             {event.notes}
           </p>
         )}
