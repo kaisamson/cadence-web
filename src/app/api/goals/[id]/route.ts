@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 
@@ -10,10 +10,11 @@ async function requireDashAuth(): Promise<boolean> {
   return auth?.value === "1";
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
+// NOTE: In your Next version, context.params is a Promise.
+// So we must type it that way and await it.
+type Ctx = { params: Promise<{ id: string }> };
+
+export async function PATCH(req: NextRequest, context: Ctx) {
   if (!(await requireDashAuth())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -21,7 +22,8 @@ export async function PATCH(
     return NextResponse.json({ error: "OWNER_ID not set" }, { status: 500 });
   }
 
-  const id = params.id;
+  const { id } = await context.params;
+
   const body = await req.json().catch(() => null);
 
   const patch: { text?: string; is_done?: boolean } = {};
@@ -47,10 +49,7 @@ export async function PATCH(
   return NextResponse.json({ goal: data });
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(_req: NextRequest, context: Ctx) {
   if (!(await requireDashAuth())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -58,10 +57,12 @@ export async function DELETE(
     return NextResponse.json({ error: "OWNER_ID not set" }, { status: 500 });
   }
 
+  const { id } = await context.params;
+
   const { error } = await supabaseAdmin
     .from("goals")
     .delete()
-    .eq("id", params.id)
+    .eq("id", id)
     .eq("user_id", OWNER_ID);
 
   if (error) {
