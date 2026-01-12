@@ -1,23 +1,35 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Goal = {
   id: string;
   text: string;
   is_done: boolean;
   created_at: string;
+  sort_order?: number | null;
 };
 
 const UI = {
   card: "rounded-xl border border-white/10 bg-white/[0.04]",
   muted: "text-white/60",
-  subtle: "text-white/45",
   pillBtn:
     "inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-white/90 hover:border-white/25 hover:text-white",
   iconBtn:
     "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] text-white/85 hover:border-white/25 hover:text-white",
+  handleBtn:
+    "inline-flex h-7 w-7 items-center justify-center rounded-md border border-white/10 bg-white/[0.02] text-white/70 hover:border-white/25 hover:text-white cursor-grab active:cursor-grabbing",
 };
+
+function HamburgerIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M3 4.5h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M3 11.5h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export function CurrentGoalsCard() {
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -25,6 +37,8 @@ export function CurrentGoalsCard() {
 
   const [showAdd, setShowAdd] = useState(false);
   const [text, setText] = useState("");
+
+  const draggingIdRef = useRef<string | null>(null);
 
   const remaining = useMemo(() => goals.filter((g) => !g.is_done).length, [goals]);
 
@@ -49,14 +63,15 @@ export function CurrentGoalsCard() {
 
     setText("");
 
-    // optimistic
+    // optimistic shell (temporarily stick to top visually)
     const optimistic: Goal = {
       id: "optimistic-" + Math.random().toString(16).slice(2),
       text: t,
       is_done: false,
       created_at: new Date().toISOString(),
+      sort_order: (goals[goals.length - 1]?.sort_order ?? goals.length - 1) + 1,
     };
-    setGoals((prev) => [optimistic, ...prev]);
+    setGoals((prev) => [...prev, optimistic]);
 
     const res = await fetch("/api/goals", {
       method: "POST",
@@ -71,7 +86,10 @@ export function CurrentGoalsCard() {
 
     const json = await res.json();
     if (json?.goal) {
-      setGoals((prev) => [json.goal as Goal, ...prev.filter((g) => g.id !== optimistic.id)]);
+      setGoals((prev) => {
+        const without = prev.filter((g) => g.id !== optimistic.id);
+        return [...without, json.goal as Goal];
+      });
     }
 
     setShowAdd(false);
@@ -80,7 +98,6 @@ export function CurrentGoalsCard() {
   async function toggleGoal(goal: Goal) {
     const nextDone = !goal.is_done;
 
-    // optimistic
     setGoals((prev) => prev.map((g) => (g.id === goal.id ? { ...g, is_done: nextDone } : g)));
 
     const res = await fetch(`/api/goals/${goal.id}`, {
@@ -95,18 +112,42 @@ export function CurrentGoalsCard() {
   }
 
   async function deleteGoal(goal: Goal) {
-    // optimistic
     setGoals((prev) => prev.filter((g) => g.id !== goal.id));
 
     const res = await fetch(`/api/goals/${goal.id}`, { method: "DELETE" });
-    if (!res.ok) {
-      setGoals((prev) => [goal, ...prev]);
-    }
+    if (!res.ok) setGoals((prev) => [...prev, goal]);
+  }
+
+  function reorderArray(list: Goal[], fromId: string, toId: string) {
+    if (fromId === toId) return list;
+    const fromIdx = list.findIndex((g) => g.id === fromId);
+    const toIdx = list.findIndex((g) => g.id === toId);
+    if (fromIdx < 0 || toIdx < 0) return list;
+
+    const next = [...list];
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
+    return next;
+  }
+
+  async function persistOrder(next: Goal[]) {
+    // write 0..N-1 to sort_order
+    setGoals(next);
+
+    await Promise.all(
+      next.map((g, idx) =>
+        fetch(`/api/goals/${g.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sort_order: idx }),
+        })
+      )
+    );
   }
 
   return (
     <div className={`${UI.card} p-4`}>
-      {/* Header row */}
+      {/* Header */}
       <div className="flex items-start justify-between gap-2">
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-wide text-white/45">
@@ -128,7 +169,7 @@ export function CurrentGoalsCard() {
         </button>
       </div>
 
-      {/* Collapsible add */}
+      {/* Add (collapsible) */}
       {showAdd && (
         <div className="mt-3 space-y-2">
           <input
@@ -157,7 +198,7 @@ export function CurrentGoalsCard() {
         </div>
       )}
 
-      {/* Scrollable list (fixed height) */}
+      {/* Scroll list */}
       <div className="mt-3 h-56 overflow-y-auto pr-1">
         <div className="space-y-2">
           {!loading && goals.length === 0 && (
@@ -169,14 +210,28 @@ export function CurrentGoalsCard() {
           {goals.map((g) => (
             <div
               key={g.id}
+              // drop target on the row
+              onDragOver={(e) => {
+                e.preventDefault();
+              }}
+              onDrop={async (e) => {
+                e.preventDefault();
+                const fromId = e.dataTransfer.getData("text/plain") || draggingIdRef.current;
+                if (!fromId) return;
+
+                const next = reorderArray(goals, fromId, g.id);
+                draggingIdRef.current = null;
+                await persistOrder(next);
+              }}
               className={[
                 "group flex items-center gap-2 rounded-lg border px-3 transition-colors",
-                "h-10", // fixed row height
+                "h-10", // fixed height
                 g.is_done
                   ? "border-emerald-500/40 bg-emerald-500/10"
                   : "border-white/10 bg-white/[0.03] hover:border-white/25",
               ].join(" ")}
             >
+              {/* Toggle + text (truncated so row never grows) */}
               <button
                 type="button"
                 onClick={() => toggleGoal(g)}
@@ -194,7 +249,6 @@ export function CurrentGoalsCard() {
                   {g.is_done ? "✓" : ""}
                 </span>
 
-                {/* truncate so row never grows */}
                 <span
                   className={[
                     "min-w-0 flex-1 truncate text-xs",
@@ -205,6 +259,7 @@ export function CurrentGoalsCard() {
                 </span>
               </button>
 
+              {/* Delete */}
               <button
                 type="button"
                 onClick={() => deleteGoal(g)}
@@ -212,6 +267,24 @@ export function CurrentGoalsCard() {
                 title="Delete"
               >
                 Delete
+              </button>
+
+              {/* Drag handle (hamburger) */}
+              <button
+                type="button"
+                className={UI.handleBtn}
+                title="Drag to reorder"
+                draggable
+                onDragStart={(e) => {
+                  draggingIdRef.current = g.id;
+                  e.dataTransfer.setData("text/plain", g.id);
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                onDragEnd={() => {
+                  draggingIdRef.current = null;
+                }}
+              >
+                <HamburgerIcon />
               </button>
             </div>
           ))}
