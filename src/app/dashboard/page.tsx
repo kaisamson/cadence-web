@@ -650,7 +650,7 @@ export default async function DashboardPage({
         </section>
 
         {/* METRIC CARDS + CHARTS */}
-        <section className="grid gap-4 md:grid-cols-4">
+        <section className="grid gap-4 md:grid-cols-3">
           {/* Current goals – left of Latest day */}
           <CurrentGoalsCard />
 
@@ -710,15 +710,6 @@ export default async function DashboardPage({
             averageValue={avgSleepLast14}
           />
 
-          <LineChartCard
-            title="Signal / Noise (last 14 days)"
-            subtitle="Productive hours vs wasted time."
-            unit="x"
-            dates={last14Dates}
-            values={ratioValues}
-            averageLabel="Avg S/N (14d)"
-            averageValue={avgRatioLast14}
-          />
         </section>
 
         {/* GYM + EXTRA METRICS */}
