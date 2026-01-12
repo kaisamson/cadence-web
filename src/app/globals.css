@@ -1,9 +1,21 @@
 @import "tailwindcss";
 
+/* app/globals.css */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* base */
+  --bg: 0 0% 0%;          /* black */
+  --fg: 0 0% 100%;        /* white text */
+  --muted: 0 0% 65%;      /* muted text */
+  --border: 0 0% 14%;     /* dark border */
+
+  /* accent (EVERYTHING uses this) */
+  --primary: 0 0% 100%;   /* white accent */
+
+  /* surfaces */
+  --card: 0 0% 6%;        /* near-black card */
+  --card2: 0 0% 9%;       /* slightly lighter variant */
 }
+
 
 @theme inline {
   --color-background: var(--background);

@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
 import Link from "next/link";
 import { MetricPillsBar } from "@/components/dashboard/MetricPillsBar";
+import { CurrentGoalsCard } from "@/components/dashboard/CurrentGoalsCard";
+
 
 const OWNER_ID = process.env.OWNER_ID!;
 
@@ -648,8 +650,11 @@ export default async function DashboardPage({
         </section>
 
         {/* METRIC CARDS + CHARTS */}
-        <section className="grid gap-4 md:grid-cols-3">
-          {/* Latest day – smaller card */}
+        <section className="grid gap-4 md:grid-cols-4">
+          {/* Current goals – left of Latest day */}
+          <CurrentGoalsCard />
+
+          {/* Latest day */}
           <div className={`${UI.card} p-4 md:col-span-1`}>
             <h2 className={`text-xs font-semibold uppercase tracking-wide ${UI.subtle}`}>
               Latest day
