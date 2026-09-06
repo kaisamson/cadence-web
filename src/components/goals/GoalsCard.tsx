@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 
 type Goal = {
   id: string;
@@ -134,11 +133,6 @@ export function GoalsCard({ compact = false }: { compact?: boolean }) {
             {loading ? "Loading…" : `${remaining} remaining`}
           </p>
         </div>
-        {compact && (
-          <Link href="/goals" className="text-[11px] text-ink-muted hover:text-ink">
-            Manage →
-          </Link>
-        )}
       </div>
 
       {!compact && (

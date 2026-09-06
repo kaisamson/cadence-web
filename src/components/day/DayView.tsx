@@ -110,7 +110,7 @@ export function DayView({
 
       <div className="pt-1">
         <Link href="/dashboard" className="text-xs text-ink-muted hover:text-ink">
-          ← All days and trends
+          ← Back to dashboard
         </Link>
       </div>
     </div>

@@ -8,7 +8,7 @@ export function DatePicker({ value, today }: { value: string; today: string }) {
   const router = useRouter();
 
   function go(date: string) {
-    router.push(date === today ? "/today" : `/day/new?date=${date}`);
+    router.push(date === today ? "/dashboard" : `/day/new?date=${date}`);
   }
 
   return (

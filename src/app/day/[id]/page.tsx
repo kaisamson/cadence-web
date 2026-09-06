@@ -23,7 +23,7 @@ export default async function DayDetailPage(props: Props) {
 
   if (!day) {
     return (
-      <AppShell>
+      <AppShell backHref="/dashboard" backLabel="Dashboard">
         <div className="py-12 text-center">
           <h1 className="text-lg font-semibold">Day not found</h1>
           <p className="mx-auto mt-2 max-w-xs text-sm text-ink-muted">
@@ -41,7 +41,7 @@ export default async function DayDetailPage(props: Props) {
   }
 
   return (
-    <AppShell>
+    <AppShell backHref="/dashboard" backLabel="Dashboard">
       <DayView day={day} date={day.date} today={today} />
     </AppShell>
   );

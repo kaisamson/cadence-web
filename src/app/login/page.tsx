@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: "Sign in" };
 
 /** Only ever redirect to a path on this site, never to an absolute URL. */
 function safeRedirectTarget(from: string | undefined): string {
-  if (!from || !from.startsWith("/") || from.startsWith("//")) return "/today";
+  if (!from || !from.startsWith("/") || from.startsWith("//")) return "/dashboard";
   return from;
 }
 

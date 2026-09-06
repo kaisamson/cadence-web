@@ -91,7 +91,8 @@ function WeekNavLink({
 
 function hrefFor(date: string, day: DaySummary | undefined, today: string) {
   if (day) return `/day/${day.id}`;
-  return date === today ? "/today" : `/day/new?date=${date}`;
+  // Today's recorder is already on this page; jump to it rather than navigating.
+  return date === today ? "/dashboard#log" : `/day/new?date=${date}`;
 }
 
 function DayRow({

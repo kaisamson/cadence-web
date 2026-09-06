@@ -4,9 +4,10 @@ import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { WeekStrip } from "@/components/dashboard/WeekStrip";
 import { GoalsCard } from "@/components/goals/GoalsCard";
+import { TodayPanel } from "@/components/dashboard/TodayPanel";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { StatTile, EmptyState } from "@/components/ui/primitives";
-import { getAllDays, type DaySummary } from "@/lib/days";
+import { getAllDays, getDayByDate, type DaySummary } from "@/lib/days";
 import { getToday } from "@/lib/serverTime";
 import { averageSleep, percentChange, signalShare } from "@/lib/metrics";
 import { formatShortDate, lastNDates, startOfWeek } from "@/lib/time";
@@ -46,6 +47,8 @@ export default async function DashboardPage({ searchParams }: Props) {
     searchParams,
   ]);
 
+  const todayRecord = await getDayByDate(today);
+
   const byDate = new Map(days.map((d) => [d.date, d]));
 
   const weekParamRaw = Array.isArray(params.week) ? params.week[0] : params.week;
@@ -73,12 +76,13 @@ export default async function DashboardPage({ searchParams }: Props) {
   if (days.length === 0) {
     return (
       <AppShell>
-        <h1 className="mb-4 text-2xl font-semibold tracking-tight">Trends</h1>
-        <EmptyState
-          title="No days logged yet"
-          body="Record your first recap and Cadence will start showing you where your time actually goes."
-          action={{ href: "/today", label: "Log today" }}
-        />
+        <div className="space-y-5">
+          <TodayPanel day={todayRecord} date={today} />
+          <EmptyState
+            title="Nothing logged yet"
+            body="Record your first recap above and your week, trends and breakdown will appear here."
+          />
+        </div>
       </AppShell>
     );
   }
@@ -86,12 +90,14 @@ export default async function DashboardPage({ searchParams }: Props) {
   return (
     <AppShell>
       <div className="space-y-5">
-        <header>
-          <h1 className="text-2xl font-semibold tracking-tight">Trends</h1>
+        <TodayPanel day={todayRecord} date={today} />
+
+        <div className="border-t border-line pt-5">
+          <h2 className="text-lg font-semibold tracking-tight">This week</h2>
           <p className="mt-0.5 text-sm text-ink-muted">
             Last 7 days, compared with the 7 before.
           </p>
-        </header>
+        </div>
 
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           <StatTile
@@ -153,7 +159,7 @@ export default async function DashboardPage({ searchParams }: Props) {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <GoalsCard compact />
+          <GoalsCard />
 
           <div className="rounded-card border border-line bg-surface p-4">
             <h2 className="text-sm font-semibold">Where the week went</h2>
