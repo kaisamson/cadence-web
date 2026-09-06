@@ -2,38 +2,51 @@
 //
 // Small user-preferences blob.
 //
-// Stored in dashboard_prefs.pinned_metrics, a text[] that already exists. The
-// column name is a leftover from the removed metric-pinning feature; reusing it
-// keeps this migration-free. Each pursuit is one JSON string in the array, which
-// is what a text[] can actually hold — writing a bare object to it fails with
-// "expected JSON array".
+// Lives in dashboard_prefs. The column was originally `pinned_metrics`, from the
+// removed metric-pinning feature, and is being renamed to `prefs`:
 //
-// To tidy the naming later:
 //   alter table dashboard_prefs rename column pinned_metrics to prefs;
+//
+// The column is resolved at runtime rather than assumed, so this code is correct
+// both before and after that statement runs — the rename can be applied without
+// coordinating it with a deploy.
+//
+// It is a text[], so each pursuit is stored as one JSON string. Writing a bare
+// object to it fails with "expected JSON array".
 
 import { supabaseAdmin } from "./supabaseAdmin";
 import { DEFAULT_PURSUITS, isPursuitArray, type Pursuit } from "./pursuits";
 
 const OWNER_ID = process.env.OWNER_ID!;
 
+const PREFERRED_COLUMN = "prefs";
+const LEGACY_COLUMN = "pinned_metrics";
+
+/** Cached so the fallback probe runs at most once per server instance. */
+let resolvedColumn: string | null = null;
+
+/** Postgres "undefined column" — the rename simply hasn't been applied yet. */
+function isMissingColumn(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return error.code === "42703" || /column .* does not exist/i.test(error.message ?? "");
+}
+
+async function getColumn(): Promise<string> {
+  if (resolvedColumn) return resolvedColumn;
+
+  const { error } = await supabaseAdmin
+    .from("dashboard_prefs")
+    .select(PREFERRED_COLUMN)
+    .limit(1);
+
+  resolvedColumn = isMissingColumn(error) ? LEGACY_COLUMN : PREFERRED_COLUMN;
+  return resolvedColumn;
+}
+
 export type Prefs = { pursuits: Pursuit[] };
 
-export async function getPrefs(): Promise<Prefs> {
-  if (!OWNER_ID) return { pursuits: DEFAULT_PURSUITS };
-
-  const { data, error } = await supabaseAdmin
-    .from("dashboard_prefs")
-    .select("pinned_metrics")
-    .eq("user_id", OWNER_ID)
-    .maybeSingle();
-
-  if (error) {
-    console.error("getPrefs error", error);
-    return { pursuits: DEFAULT_PURSUITS };
-  }
-
-  const raw = data?.pinned_metrics;
-  if (!Array.isArray(raw)) return { pursuits: DEFAULT_PURSUITS };
+function parsePursuits(raw: unknown): Pursuit[] {
+  if (!Array.isArray(raw)) return DEFAULT_PURSUITS;
 
   const parsed = raw.flatMap((entry) => {
     if (typeof entry !== "string") return [];
@@ -45,14 +58,36 @@ export async function getPrefs(): Promise<Prefs> {
     }
   });
 
-  return { pursuits: isPursuitArray(parsed) ? parsed : DEFAULT_PURSUITS };
+  return isPursuitArray(parsed) ? parsed : DEFAULT_PURSUITS;
+}
+
+export async function getPrefs(): Promise<Prefs> {
+  if (!OWNER_ID) return { pursuits: DEFAULT_PURSUITS };
+
+  const column = await getColumn();
+
+  const { data, error } = await supabaseAdmin
+    .from("dashboard_prefs")
+    .select(column)
+    .eq("user_id", OWNER_ID)
+    .maybeSingle();
+
+  if (error) {
+    console.error("getPrefs error", error);
+    return { pursuits: DEFAULT_PURSUITS };
+  }
+
+  const row = data as Record<string, unknown> | null;
+  return { pursuits: parsePursuits(row?.[column]) };
 }
 
 export async function savePrefs(prefs: Prefs): Promise<void> {
+  const column = await getColumn();
+
   const { error } = await supabaseAdmin.from("dashboard_prefs").upsert(
     {
       user_id: OWNER_ID,
-      pinned_metrics: prefs.pursuits.map((p) => JSON.stringify(p)),
+      [column]: prefs.pursuits.map((p) => JSON.stringify(p)),
     },
     { onConflict: "user_id" }
   );
