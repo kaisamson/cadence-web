@@ -47,6 +47,14 @@ export type DerivedMetrics = {
   deepWorkHours: number;
   focusBlocks: number;
   contextSwitches: number;
+  /**
+   * The night's main sleep — the longest unbroken rest run — as minutes from
+   * midnight. Naps are counted in sleepHours but must not define the wake time:
+   * a 3pm nap ending at 23:00 otherwise reads as "woke at 11pm".
+   */
+  mainSleepStart: number | null;
+  mainSleepEnd: number | null;
+  mainSleepHours: number;
 };
 
 /** A productive run must reach this long to count as a focus block. */
@@ -175,6 +183,7 @@ export function computeMetrics(events: TimelineEvent[]): DerivedMetrics {
   }
 
   const { focusBlocks, deepWorkMinutes, contextSwitches } = countRuns(canvas);
+  const mainSleep = findMainSleep(canvas);
   const h = (m: number) => Math.round((m / 60) * 100) / 100;
 
   return {
@@ -186,7 +195,31 @@ export function computeMetrics(events: TimelineEvent[]): DerivedMetrics {
     deepWorkHours: h(deepWorkMinutes),
     focusBlocks,
     contextSwitches,
+    mainSleepStart: mainSleep?.start ?? null,
+    mainSleepEnd: mainSleep?.end ?? null,
+    mainSleepHours: mainSleep ? h(mainSleep.end - mainSleep.start) : 0,
   };
+}
+
+/** Longest contiguous run of sleep on the canvas. */
+function findMainSleep(
+  canvas: (Category | null)[]
+): { start: number; end: number } | null {
+  let best: { start: number; end: number } | null = null;
+  let runStart: number | null = null;
+
+  for (let m = 0; m <= canvas.length; m++) {
+    const isSleep = m < canvas.length && canvas[m] === "sleep";
+    if (isSleep && runStart === null) {
+      runStart = m;
+    } else if (!isSleep && runStart !== null) {
+      const run = { start: runStart, end: m };
+      if (!best || run.end - run.start > best.end - best.start) best = run;
+      runStart = null;
+    }
+  }
+
+  return best;
 }
 
 /* ------------------------------------------------------------------ */

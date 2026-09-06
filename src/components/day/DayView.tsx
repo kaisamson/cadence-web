@@ -5,8 +5,10 @@ import { RecapComposer } from "@/components/RecapComposer";
 import { DayRibbon } from "./DayRibbon";
 import { TimelineEditor } from "./TimelineEditor";
 import { DeleteDayButton } from "./DeleteDayButton";
+import { GapFiller } from "./GapFiller";
 import { Card, StatTile } from "@/components/ui/primitives";
 import { signalShare } from "@/lib/metrics";
+import { findGaps } from "@/lib/insights";
 import { formatDate, relativeDayLabel } from "@/lib/time";
 
 export function DayView({
@@ -64,6 +66,8 @@ export function DayView({
           </Card>
 
           <DayMetrics metrics={day.metrics} />
+
+          <GapFiller date={date} gaps={findGaps(day.events)} />
 
           {day.suggestions.length > 0 && (
             <Card className="p-4">

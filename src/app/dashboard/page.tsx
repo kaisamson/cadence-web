@@ -5,11 +5,17 @@ import { AppShell } from "@/components/AppShell";
 import { WeekStrip } from "@/components/dashboard/WeekStrip";
 import { GoalsCard } from "@/components/goals/GoalsCard";
 import { TodayPanel } from "@/components/dashboard/TodayPanel";
+import { LoggingStatus } from "@/components/dashboard/LoggingStatus";
+import { RhythmCard } from "@/components/dashboard/RhythmCard";
+import { PursuitsCard } from "@/components/dashboard/PursuitsCard";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { StatTile, EmptyState } from "@/components/ui/primitives";
 import { getAllDays, getDayByDate, type DaySummary } from "@/lib/days";
 import { getToday } from "@/lib/serverTime";
 import { averageSleep, percentChange, signalShare } from "@/lib/metrics";
+import { loggingStatus, topLeaks, wakeConsistency, weekdayPattern } from "@/lib/insights";
+import { getPrefs } from "@/lib/prefs";
+import { pursuitStats } from "@/lib/pursuits";
 import { formatShortDate, lastNDates, startOfWeek } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
@@ -47,7 +53,19 @@ export default async function DashboardPage({ searchParams }: Props) {
     searchParams,
   ]);
 
-  const todayRecord = await getDayByDate(today);
+  const [todayRecord, prefs] = await Promise.all([getDayByDate(today), getPrefs()]);
+
+  const logged = new Set(days.map((d) => d.date));
+  const status = loggingStatus(logged, today);
+  const rhythm = weekdayPattern(days);
+  const wake = wakeConsistency(days);
+  const leaks = topLeaks(days, 4);
+  // Pursuits over the last 30 days, so "sessions" means recent behaviour.
+  const recent30 = new Set(lastNDates(30, today));
+  const pursuits = pursuitStats(
+    days.filter((d) => recent30.has(d.date)),
+    prefs.pursuits
+  );
 
   const byDate = new Map(days.map((d) => [d.date, d]));
 
@@ -91,6 +109,8 @@ export default async function DashboardPage({ searchParams }: Props) {
     <AppShell>
       <div className="space-y-5">
         <TodayPanel day={todayRecord} date={today} />
+
+        <LoggingStatus status={status} />
 
         <div className="border-t border-line pt-5">
           <h2 className="text-lg font-semibold tracking-tight">This week</h2>
@@ -159,6 +179,11 @@ export default async function DashboardPage({ searchParams }: Props) {
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
+          <RhythmCard weekdays={rhythm} wake={wake} />
+          <PursuitsCard stats={pursuits} today={today} windowLabel="Last 30 days" />
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
           <GoalsCard />
 
           <div className="rounded-card border border-line bg-surface p-4">
@@ -174,11 +199,25 @@ export default async function DashboardPage({ searchParams }: Props) {
               <Breakdown label="Unaccounted" hours={current.untrackedHours} tone="hatch-unknown" total={current} />
             </dl>
 
-            {current.untrackedHours > current.productiveHours && (
-              <p className="mt-3 rounded-lg border border-unknown/30 bg-unknown/10 px-3 py-2 text-[11px] text-ink-muted">
-                More of your week is unaccounted for than accounted as signal.
-                Adding detail to your recaps will sharpen every number here.
-              </p>
+            {leaks.length > 0 && (
+              <div className="mt-4 border-t border-line pt-3">
+                <h3 className="text-[10px] font-semibold uppercase tracking-wider text-ink-faint">
+                  Biggest leaks
+                </h3>
+                <ul className="mt-2 space-y-1">
+                  {leaks.map((leak) => (
+                    <li
+                      key={leak.label}
+                      className="flex items-baseline justify-between gap-2 text-[11px]"
+                    >
+                      <span className="truncate text-ink-muted">{leak.label}</span>
+                      <span className="shrink-0 tabular-nums text-noise">
+                        {leak.hours.toFixed(1)}h
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         </div>
