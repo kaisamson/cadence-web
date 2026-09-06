@@ -1,38 +1,119 @@
 @import "tailwindcss";
 
-/* app/globals.css */
+/* ==========================================================================
+   Cadence design tokens
+
+   Tailwind v4 reads its theme from CSS, not tailwind.config.ts — the old config
+   file was dead code, as were the :root variables it referenced. These tokens
+   generate real utilities (bg-surface, text-ink-muted, border-line, ...).
+   ========================================================================== */
+
+@theme {
+  /* Surfaces — a deliberate ladder rather than ad-hoc bg-white/[0.04] */
+  --color-canvas: #000000;
+  --color-surface: #0b0b0c;
+  --color-surface-2: #141416;
+  --color-surface-3: #1c1c1f;
+  --color-line: #262629;
+  --color-line-strong: #3a3a3f;
+
+  /* Text */
+  --color-ink: #fafafa;
+  --color-ink-muted: #a1a1a6;
+  --color-ink-faint: #6e6e73;
+
+  /* Category semantics — the one place colour carries meaning.
+     Validated for colour-vision deficiency against the #0b0b0c surface
+     (all-pairs, OKLab dE). Only the three categories that carry a judgement get
+     a hue; "upkeep" and "unaccounted" are deliberately achromatic, which both
+     matches their meaning and keeps the hue set small enough to stay separable. */
+  --color-signal: #199e70;
+  --color-noise: #e66767;
+  --color-rest: #3987e5;
+  --color-upkeep: #9a9aa2;
+  --color-unknown: #6b6b76;
+
+  --radius-card: 0.875rem;
+}
+
 :root {
-  /* base */
-  --bg: 0 0% 0%;          /* black */
-  --fg: 0 0% 100%;        /* white text */
-  --muted: 0 0% 65%;      /* muted text */
-  --border: 0 0% 14%;     /* dark border */
-
-  /* accent (EVERYTHING uses this) */
-  --primary: 0 0% 100%;   /* white accent */
-
-  /* surfaces */
-  --card: 0 0% 6%;        /* near-black card */
-  --card2: 0 0% 9%;       /* slightly lighter variant */
+  /* Dark-committed: the app is black by design, and this also makes native
+     controls (date picker, scrollbars, form fields) render dark instead of
+     defaulting to a white system chrome. */
+  color-scheme: dark;
 }
 
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--color-canvas);
+  /* Stop iOS Safari from auto-inflating text in landscape. */
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  /* Room for the mobile tab bar plus the iPhone home indicator. */
+  padding-bottom: env(safe-area-inset-bottom);
+  overscroll-behavior-y: none;
+}
+
+/* Keyboard focus stays visible; pointer clicks don't get a ring. */
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+/* Give the native date picker indicator a usable colour on dark. */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+/* Thin scrollbars inside scroll regions (goal list, week rail). */
+.scroll-slim {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-strong) transparent;
+}
+.scroll-slim::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.scroll-slim::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 999px;
+}
+
+/* Horizontal rails snap to cards on touch. */
+.snap-rail {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.snap-rail > * {
+  scroll-snap-align: start;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Unaccounted time is an absence, not a category: hatching says "no data here"
+   in a way a flat fill never does, and doubles as the non-colour encoding that
+   keeps the ribbon readable for colour-vision deficiency. */
+.hatch-unknown {
+  background-image: repeating-linear-gradient(
+    45deg,
+    var(--color-unknown) 0 2px,
+    transparent 2px 6px
+  );
+  background-color: color-mix(in srgb, var(--color-unknown) 18%, transparent);
 }

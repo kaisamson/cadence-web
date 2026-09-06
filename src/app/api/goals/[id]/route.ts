@@ -1,19 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
+import { verifyRequestAuthorized } from "@/lib/apiAuth";
 
 const OWNER_ID = process.env.OWNER_ID!;
-
-async function requireDashAuth(): Promise<boolean> {
-  const cookieStore = await cookies();
-  const auth = cookieStore.get("cadence_auth");
-  return auth?.value === "1";
-}
 
 type Ctx = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: NextRequest, context: Ctx) {
-  if (!(await requireDashAuth()))
+  if (!(await verifyRequestAuthorized(req)))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!OWNER_ID)
     return NextResponse.json({ error: "OWNER_ID not set" }, { status: 500 });
@@ -44,8 +38,8 @@ export async function PATCH(req: NextRequest, context: Ctx) {
   return NextResponse.json({ goal: data });
 }
 
-export async function DELETE(_req: NextRequest, context: Ctx) {
-  if (!(await requireDashAuth()))
+export async function DELETE(req: NextRequest, context: Ctx) {
+  if (!(await verifyRequestAuthorized(req)))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!OWNER_ID)
     return NextResponse.json({ error: "OWNER_ID not set" }, { status: 500 });

@@ -1,83 +1,76 @@
-# 🕒 Cadence — Own Your Time  
-**AI-Powered Personal Time Optimization (iOS + Web Ecosystem)**  
-Built by **Kai Samson**
+# 🕒 Cadence — Own Your Time
 
-Cadence is a life-optimization system that transforms your end-of-day voice recap into a structured timeline, productivity analytics, and personalized coaching recommendations.  
+Turn a spoken end-of-day recap into a structured timeline, honest metrics, and a
+short list of things to change tomorrow.
 
-The goal: **help ambitious people understand how they spend their days, find inefficiencies, and operate at their highest potential.**
-
----
-
-## ✨ Features
-
-### 🎙️ **Voice → Timeline (On-Device Whisper) IOS**
-Record a short recap of your day.  
-Cadence uses on-device Whisper transcription to convert audio into structured natural language.
-
-### 🧠 **AI-Powered Daily Breakdown**
-A lightweight LLM interprets the transcript and generates:
-- A chronological timeline of your day  
-- Categorized activities (work, school, recovery, fitness, overhead, wasted time)  
-- Productivity gaps + inefficiencies  
-- Personalized optimization suggestions  
-
-### 📅 **Daily Log Storage**
-Your days sync across:
-- The **iOS app**
-- The **web dashboard** (Next.js)
-
-Stored using:
-- **Supabase Postgres** for logs
-- **Secure user auth** on both platforms
-
-### 📊 **Metrics & Insights**
-Cadence gives you:
-- Total focused hours  
-- Time wasted  
-- Deep work percentage  
-- Sleep / recovery balance  
-- Consistency tracking  
-- Weekly improvement prompts  
-
-### 🖥️ **Web Dashboard**
-View timelines, trends, analytics, and AI reports from any device.
-
-### 🍎 **iOS App**
-Built in **SwiftUI**, using:
-- On-device Whisper
-- On-device or API-based LLM prompt pipelines
-- Local caching + Cloud sync
-- A premium, futuristic UX inspired by founder tools
+Built by **Kai Samson**. Web only — desktop and mobile browser.
 
 ---
 
-## 🛠 Tech Stack
+## How it works
 
-### **iOS**
-- Swift / SwiftUI  
-- Whisper (on-device transcription)  
-- Local LLM / cloud LLM fallback  
-- Supabase Auth  
-- Postgres write-back  
-- Offline-first caching  
+1. **Record.** Tap the mic on `/today` and describe your day out loud. Audio is
+   transcribed server-side (OpenAI), so it works reliably in Safari on iOS as
+   well as desktop Chrome and Firefox.
+2. **Structure.** A model turns the recap into a timeline of events, each
+   categorised as signal, upkeep, noise, rest, or unaccounted.
+3. **Measure.** The server computes metrics *from that timeline* — see below.
+4. **Correct.** Tap any block to fix its label, category, or times. Or record a
+   follow-up recap; it merges into the existing day rather than replacing it.
 
-### **Web**
-- Next.js 15+  
-- React Server Components  
-- TailwindCSS  
-- Supabase Postgres  
-- Edge functions (optional)  
-- Vercel deployment  
+## Metrics are derived, not reported
 
-### **AI**
-- Whisper → LLM → Structured JSON
-- NOTE : Install whisper model first if on iOS
-- Custom prompting for timeline + insights
+The model produces the timeline. It never reports the numbers.
 
----
+Every day is painted onto a 1440-minute canvas and the minutes are counted, so
+totals always reconcile to exactly 24h and always match the timeline on screen.
+Overlapping events resolve shortest-first, so a 15-minute scroll nested inside a
+2-hour study block carves 15 minutes out of it instead of double-counting.
 
-## 📦 Installation (Web)
+Unaccounted time is surfaced as its own number rather than silently dropped —
+it is usually the most actionable figure on the page.
+
+**Deep work hours** (productive time inside unbroken 45-minute-plus stretches)
+is preferred over a raw block count: being interrupted three times turns one
+three-hour stretch into three qualifying blocks, so a count rewards
+fragmentation while these hours correctly fall.
+
+## Stack
+
+- Next.js 16 (App Router, RSC) · React 19 · TypeScript
+- Tailwind v4 — theme tokens live in `src/app/globals.css`, not a config file
+- Supabase Postgres
+- OpenAI for transcription and timeline structuring
+
+## Setup
 
 ```bash
 npm install
 npm run dev
+```
+
+`.env.local`:
+
+| Variable | Purpose |
+|---|---|
+| `OPENAI_API_KEY` | Transcription + timeline structuring |
+| `SUPABASE_URL` | Supabase project URL |
+| `SUPABASE_SERVICE_ROLE` | Server-side DB access |
+| `OWNER_ID` | The single user's UUID |
+| `CADENCE_DASHBOARD_PASSWORD` | Login password |
+| `CADENCE_AUTH_SECRET` | *Recommended.* HMAC key for session cookies. Falls back to the password if unset. |
+| `CADENCE_TIMEZONE` | Default IANA zone (e.g. `America/Toronto`) used until the browser reports its own |
+| `CADENCE_MODEL` | Optional. Defaults to `gpt-4.1-mini` |
+| `CADENCE_TRANSCRIBE_MODEL` | Optional. Defaults to `gpt-4o-mini-transcribe` |
+
+## Install on iPhone
+
+Open the site in Safari → Share → **Add to Home Screen**. It runs standalone,
+with its own icon and no browser chrome.
+
+## Notes
+
+- Auth is a signed, expiring HMAC cookie checked in `src/proxy.ts` for every
+  route. A single shared password gates the whole app; there is one user.
+- "Today" is resolved in the user's timezone, reported by the browser via
+  cookie — the server clock (UTC on Vercel) is never used to decide the date.

@@ -1,32 +1,33 @@
-// app/login/page.tsx
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-const DASHBOARD_PASSWORD = process.env.CADENCE_DASHBOARD_PASSWORD;
+import {
+  AUTH_COOKIE,
+  SESSION_COOKIE_OPTIONS,
+  checkPassword,
+  createSessionToken,
+} from "@/lib/auth";
+
+export const metadata: Metadata = { title: "Sign in" };
+
+/** Only ever redirect to a path on this site, never to an absolute URL. */
+function safeRedirectTarget(from: string | undefined): string {
+  if (!from || !from.startsWith("/") || from.startsWith("//")) return "/today";
+  return from;
+}
 
 async function login(formData: FormData) {
   "use server";
 
-  const password = formData.get("password");
-  const from = (formData.get("from") as string | null) ?? "/dashboard";
+  const from = safeRedirectTarget(formData.get("from") as string | null ?? undefined);
 
-  if (!DASHBOARD_PASSWORD) {
-    throw new Error("CADENCE_DASHBOARD_PASSWORD not set");
-  }
-
-  if (password !== DASHBOARD_PASSWORD) {
-    redirect("/login?error=1");
+  if (!checkPassword(formData.get("password"))) {
+    redirect(`/login?error=1&from=${encodeURIComponent(from)}`);
   }
 
   const cookieStore = await cookies();
-
-  cookieStore.set("cadence_auth", "1", {
-    httpOnly: true,
-    secure: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30,
-  });
+  cookieStore.set(AUTH_COOKIE, await createSessionToken(), SESSION_COOKIE_OPTIONS);
 
   redirect(from);
 }
@@ -37,50 +38,53 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string; from?: string }>;
 }) {
   const params = await searchParams;
-  const showError = params.error === "1";
-  const from = params.from ?? "/dashboard";
+  const from = safeRedirectTarget(params.from);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-black text-white">
-      <div className="w-full max-w-sm rounded-xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.06)]">
-        <h1 className="mb-2 text-2xl font-semibold text-white/95">
-          Cadence Login
-        </h1>
-        <p className="mb-5 text-sm text-white/60">
-          Enter your password to view your Cadence dashboard.
-        </p>
-
-        {showError && (
-          <div className="mb-4 rounded-lg border border-rose-500/40 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
-            Incorrect password. Please try again.
+    <main className="flex min-h-dvh items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        <div className="mb-6 flex items-center gap-2.5">
+          <svg viewBox="0 0 64 64" className="h-7 w-7" aria-hidden="true">
+            <path d="M8 32h9l6-14 9 28 7-18 5 4h12" fill="none" stroke="currentColor"
+                  strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight">Cadence</h1>
+            <p className="text-xs text-ink-muted">Own your time.</p>
           </div>
-        )}
+        </div>
 
-        <form action={login} className="space-y-4">
+        <form action={login} className="rounded-card border border-line bg-surface p-5">
           <input type="hidden" name="from" value={from} />
 
-          <div>
-            <label className="mb-1 block text-sm font-medium text-white/80">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              className="w-full rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 text-sm text-white placeholder:text-white/35 outline-none focus:border-white/25"
-              required
-            />
-          </div>
+          {params.error === "1" && (
+            <div
+              role="alert"
+              className="mb-4 rounded-lg border border-noise/40 bg-noise/10 px-3 py-2 text-xs text-noise"
+            >
+              That password didn&apos;t match. Try again.
+            </div>
+          )}
+
+          <label htmlFor="password" className="block text-xs font-medium text-ink-muted">
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            name="password"
+            autoComplete="current-password"
+            autoFocus
+            required
+            className="mt-1.5 w-full rounded-lg border border-line bg-surface-2 px-3 py-2.5 text-sm text-ink outline-none focus:border-line-strong"
+          />
 
           <button
             type="submit"
-            className="w-full rounded-lg border border-white/10 bg-white/[0.06] px-3 py-2 text-sm font-semibold text-white/90 hover:border-white/25 hover:bg-white/[0.08] hover:text-white"
+            className="mt-4 w-full rounded-lg bg-ink px-4 py-2.5 text-sm font-semibold text-canvas hover:opacity-90"
           >
-            Log in
+            Sign in
           </button>
-
-          <p className="pt-1 text-center text-[11px] text-white/45">
-            Authorized access only.
-          </p>
         </form>
       </div>
     </main>
