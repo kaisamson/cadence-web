@@ -8,11 +8,12 @@ import { TodayPanel } from "@/components/dashboard/TodayPanel";
 import { LoggingStatus } from "@/components/dashboard/LoggingStatus";
 import { RhythmCard } from "@/components/dashboard/RhythmCard";
 import { PursuitsCard } from "@/components/dashboard/PursuitsCard";
+import { SignalToNoise } from "@/components/dashboard/SignalToNoise";
 import { TrendChart } from "@/components/charts/TrendChart";
 import { StatTile, EmptyState } from "@/components/ui/primitives";
 import { getAllDays, getDayByDate, type DaySummary } from "@/lib/days";
 import { getToday } from "@/lib/serverTime";
-import { averageSleep, percentChange, signalShare } from "@/lib/metrics";
+import { averageSleep, percentChange } from "@/lib/metrics";
 import { loggingStatus, topLeaks, wakeConsistency, weekdayPattern } from "@/lib/insights";
 import { getPrefs } from "@/lib/prefs";
 import { pursuitStats } from "@/lib/pursuits";
@@ -82,12 +83,10 @@ export default async function DashboardPage({ searchParams }: Props) {
   const current = totalsFor(last7, byDate);
   const previous = totalsFor(prior7, byDate);
 
-  const currentShare = signalShare(current);
-  const previousShare = signalShare(previous);
-
   const last14 = lastNDates(14, today);
   const sleepSeries = last14.map((d) => byDate.get(d)?.metrics.sleepHours ?? null);
   const signalSeries = last14.map((d) => byDate.get(d)?.metrics.productiveHours ?? null);
+  const ratioSeries = last14.map((date) => ({ date, totals: byDate.get(date)?.metrics ?? null }));
 
   const avgSleep = averageSleep(sleepSeries);
 
@@ -98,7 +97,7 @@ export default async function DashboardPage({ searchParams }: Props) {
           <TodayPanel day={todayRecord} date={today} />
           <EmptyState
             title="Nothing logged yet"
-            body="Record your first recap above and your week, trends and breakdown will appear here."
+            body="Record your first recap above."
           />
         </div>
       </AppShell>
@@ -114,10 +113,14 @@ export default async function DashboardPage({ searchParams }: Props) {
 
         <div className="border-t border-line pt-5">
           <h2 className="text-lg font-semibold tracking-tight">This week</h2>
-          <p className="mt-0.5 text-sm text-ink-muted">
-            Last 7 days, compared with the 7 before.
-          </p>
         </div>
+
+        <SignalToNoise
+          totals={current}
+          previous={previous}
+          series={ratioSeries}
+          label="Last 7 days"
+        />
 
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           <StatTile
@@ -135,20 +138,19 @@ export default async function DashboardPage({ searchParams }: Props) {
             goodDirection="down"
           />
           <StatTile
-            label="Signal share"
-            value={currentShare != null ? currentShare.toFixed(0) : "–"}
-            unit="%"
-            delta={percentChange(currentShare, previousShare)}
-            goodDirection="up"
-            hint="of active time"
-          />
-          <StatTile
             label="Deep work"
             value={current.deepWorkHours.toFixed(1)}
             unit="h"
             delta={percentChange(current.deepWorkHours, previous.deepWorkHours)}
             goodDirection="up"
             hint="in 45+ min stretches"
+          />
+          <StatTile
+            label="Unaccounted"
+            value={current.untrackedHours.toFixed(1)}
+            unit="h"
+            delta={percentChange(current.untrackedHours, previous.untrackedHours)}
+            goodDirection="down"
           />
         </div>
 

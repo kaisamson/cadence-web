@@ -5,13 +5,7 @@ import { useRouter } from "next/navigation";
 import type { PursuitStat } from "@/lib/pursuits";
 import { relativeDayLabel } from "@/lib/time";
 
-/**
- * Things you're trying to do more of, matched against event labels by keyword.
- *
- * Keywords are editable because the model's wording varies — "Gym workout",
- * "Driving range", "Golf at the range" are all one pursuit, and no fixed rule
- * would have caught them.
- */
+/** Matched against event labels by keyword, editable because wording varies. */
 export function PursuitsCard({
   stats,
   today,

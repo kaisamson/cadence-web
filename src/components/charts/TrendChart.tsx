@@ -19,11 +19,6 @@ const W = 300;
 const H = 90;
 const PAD = { top: 8, right: 4, bottom: 4, left: 4 };
 
-/**
- * Single-series trend. One series means no legend is needed — the card title
- * names it — but a hover crosshair is always present, because a static line
- * with no way to read a value is just decoration.
- */
 export function TrendChart({
   title,
   subtitle,

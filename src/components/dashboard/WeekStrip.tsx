@@ -4,13 +4,6 @@ import type { DaySummary } from "@/lib/days";
 import { DayRibbon } from "@/components/day/DayRibbon";
 import { addDays, formatShortDate, formatWeekday, startOfWeek, weekDates } from "@/lib/time";
 
-/**
- * The week, readable on a phone.
- *
- * The previous version was a 7-column grid at every breakpoint — roughly 48px
- * per day on a phone. Here mobile gets full-width rows and desktop gets the
- * grid, and every empty day is a link that starts a log for that date.
- */
 export function WeekStrip({
   weekStart,
   daysByDate,

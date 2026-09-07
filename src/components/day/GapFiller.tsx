@@ -5,12 +5,7 @@ import { useRouter } from "next/navigation";
 import type { Gap } from "@/lib/insights";
 import { formatClock, formatDuration, minutesToTime, nowLocalTime } from "@/lib/time";
 
-/**
- * Unaccounted time averages ~4.8h/day across the log — more than logged noise.
- * Rather than showing that as a number to feel bad about, this asks the one
- * question that shrinks it, for the single biggest gap, and appends the answer
- * to the day.
- */
+/** Asks about the single biggest unaccounted stretch and appends the answer. */
 export function GapFiller({ date, gaps }: { date: string; gaps: Gap[] }) {
   const router = useRouter();
   const [answer, setAnswer] = useState("");

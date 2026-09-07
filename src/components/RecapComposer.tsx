@@ -262,13 +262,13 @@ export function RecapComposer({ date, mode, placeholder }: Props) {
               ? "Add more, or save below"
               : "Tap to record your recap"}
           </div>
-          <p className="mt-0.5 text-xs text-ink-muted">
-            {status === "recording"
-              ? "Take your time — pauses are fine."
-              : mode === "append"
-              ? "This merges into the existing timeline."
-              : "Say when you woke up, what you did, and how you slept."}
-          </p>
+          {status !== "recording" && (
+            <p className="mt-0.5 text-xs text-ink-muted">
+              {mode === "append"
+                ? "Merges into the existing timeline."
+                : "Say when you woke up, what you did, and how you slept."}
+            </p>
+          )}
         </div>
       </div>
 

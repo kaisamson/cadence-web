@@ -4,11 +4,7 @@ import { MINUTES_PER_DAY } from "@/lib/time";
 
 const LEGEND_ORDER = ["productive", "waste", "neutral", "sleep", "untracked"] as const;
 
-/**
- * The whole day as one 24-hour bar. Reads at a glance on a phone, where a
- * scrolling list of events does not, and makes unaccounted time impossible
- * to miss.
- */
+/** The whole day as one 24-hour bar. */
 export function DayRibbon({
   events,
   showLegend = true,

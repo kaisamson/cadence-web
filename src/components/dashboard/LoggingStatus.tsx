@@ -2,10 +2,6 @@ import Link from "next/link";
 import type { LoggingStatus as Status } from "@/lib/insights";
 import { formatWeekday, formatShortDate } from "@/lib/time";
 
-/**
- * Logging consistency, surfaced first because every other number depends on it:
- * a metric drawn from 60% of days is a metric with a 40% hole in it.
- */
 export function LoggingStatus({ status }: { status: Status }) {
   const catchUp = status.missingRecent.slice(0, 4);
 
@@ -56,8 +52,8 @@ export function LoggingStatus({ status }: { status: Status }) {
 
       {catchUp.length > 0 && (
         <div className="mt-3 border-t border-line pt-3">
-          <p className="text-[11px] text-ink-muted">
-            Catch up on a missed day — it only takes a sentence:
+          <p className="text-[10px] font-medium uppercase tracking-wider text-ink-faint">
+            Missed
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {catchUp.map((date) => (

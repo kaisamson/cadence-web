@@ -3,10 +3,6 @@
 import Link from "next/link";
 import { TimezoneSync } from "./TimezoneSync";
 
-/**
- * Chrome only. Cadence is a single-page dashboard — there is no tab bar,
- * because there is only one place to be. The one drill-down is a specific day.
- */
 export function AppShell({
   children,
   backHref,

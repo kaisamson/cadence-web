@@ -235,18 +235,15 @@ export type PeriodTotals = {
   loggedDays: number;
 };
 
+export type SignalNoise = { productiveHours: number; wastedHours: number };
+
 /**
- * Signal share: productive / (productive + waste), as a percentage.
+ * Signal as a 0–100 share of active time — the signal half of the 80:20 split.
  *
- * Computed over *summed* hours for the period rather than by averaging each
- * day's ratio — an average of per-day ratios is dominated by days with almost
- * no waste, and a raw prod/waste ratio is unbounded when waste is zero.
- * A share is bounded 0–100 and always comparable between periods.
+ * Always taken from *summed* hours over a period, never by averaging each day's
+ * share: one day with almost no active time would otherwise swing the week.
  */
-export function signalShare(totals: {
-  productiveHours: number;
-  wastedHours: number;
-}): number | null {
+export function signalShare(totals: SignalNoise): number | null {
   const denom = totals.productiveHours + totals.wastedHours;
   if (denom <= 0) return null;
   return (totals.productiveHours / denom) * 100;

@@ -6,8 +6,8 @@ import { DayRibbon } from "./DayRibbon";
 import { TimelineEditor } from "./TimelineEditor";
 import { DeleteDayButton } from "./DeleteDayButton";
 import { GapFiller } from "./GapFiller";
+import { SignalToNoise } from "@/components/dashboard/SignalToNoise";
 import { Card, StatTile } from "@/components/ui/primitives";
-import { signalShare } from "@/lib/metrics";
 import { findGaps } from "@/lib/insights";
 import { formatDate, relativeDayLabel } from "@/lib/time";
 
@@ -48,10 +48,6 @@ export function DayView({
       {!day ? (
         <Card className="p-6 text-center">
           <p className="text-sm font-medium text-ink">Nothing logged for this day yet</p>
-          <p className="mx-auto mt-1 max-w-sm text-xs text-ink-muted">
-            Record a recap above and Cadence will build the timeline, work out
-            where your hours actually went, and tell you what to change.
-          </p>
         </Card>
       ) : (
         <>
@@ -64,6 +60,8 @@ export function DayView({
           <Card className="p-4">
             <DayRibbon events={day.events} />
           </Card>
+
+          <SignalToNoise totals={day.metrics} />
 
           <DayMetrics metrics={day.metrics} />
 
@@ -84,10 +82,7 @@ export function DayView({
           )}
 
           <Card className="p-4">
-            <div className="mb-3 flex items-baseline justify-between gap-2">
-              <h2 className="text-sm font-semibold">Timeline</h2>
-              <span className="text-[11px] text-ink-faint">Tap any block to fix it</span>
-            </div>
+            <h2 className="mb-3 text-sm font-semibold">Timeline</h2>
             <TimelineEditor events={day.events} />
           </Card>
 
@@ -122,16 +117,9 @@ export function DayView({
 }
 
 function DayMetrics({ metrics }: { metrics: DayRecord["metrics"] }) {
-  const share = signalShare(metrics);
-
   return (
     <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-      <StatTile
-        label="Signal"
-        value={metrics.productiveHours.toFixed(1)}
-        unit="h"
-        hint={share != null ? `${share.toFixed(0)}% of active time` : undefined}
-      />
+      <StatTile label="Signal" value={metrics.productiveHours.toFixed(1)} unit="h" />
       <StatTile label="Noise" value={metrics.wastedHours.toFixed(1)} unit="h" />
       <StatTile label="Upkeep" value={metrics.neutralHours.toFixed(1)} unit="h" />
       <StatTile label="Sleep" value={metrics.sleepHours.toFixed(1)} unit="h" />
@@ -141,12 +129,7 @@ function DayMetrics({ metrics }: { metrics: DayRecord["metrics"] }) {
         unit="h"
         hint="in 45+ min stretches"
       />
-      <StatTile
-        label="Unaccounted"
-        value={metrics.untrackedHours.toFixed(1)}
-        unit="h"
-        hint={metrics.untrackedHours > 2 ? "Worth describing" : undefined}
-      />
+      <StatTile label="Unaccounted" value={metrics.untrackedHours.toFixed(1)} unit="h" />
     </div>
   );
 }

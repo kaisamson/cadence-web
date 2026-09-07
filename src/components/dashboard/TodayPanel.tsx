@@ -3,17 +3,11 @@ import Link from "next/link";
 import type { DayRecord } from "@/lib/days";
 import { RecapComposer } from "@/components/RecapComposer";
 import { DayRibbon } from "@/components/day/DayRibbon";
-import { signalShare } from "@/lib/metrics";
+import { SplitFigure, splitOf } from "@/components/dashboard/SignalToNoise";
 import { formatDate } from "@/lib/time";
 
-/**
- * The top of the dashboard and the app's primary action: record today.
- *
- * Deliberately a summary, not the full day view — the timeline and per-event
- * editing live on the day's own page, one tap away.
- */
 export function TodayPanel({ day, date }: { day: DayRecord | null; date: string }) {
-  const share = day ? signalShare(day.metrics) : null;
+  const split = day ? splitOf(day.metrics) : null;
 
   return (
     <section id="log" className="scroll-mt-20 space-y-3">
@@ -53,12 +47,12 @@ export function TodayPanel({ day, date }: { day: DayRecord | null; date: string 
             />
           </dl>
 
-          {share != null && (
-            <p className="mt-3 border-t border-line pt-3 text-xs text-ink-muted">
-              <span className="font-semibold text-ink">{share.toFixed(0)}%</span> of your
-              active time today was signal.
-            </p>
-          )}
+          <div className="mt-3 flex items-baseline justify-between border-t border-line pt-3">
+            <span className="text-[10px] font-medium uppercase tracking-wider text-ink-faint">
+              Signal-to-noise
+            </span>
+            <SplitFigure split={split} className="text-2xl" />
+          </div>
 
           {day.suggestions.length > 0 && (
             <ul className="mt-3 space-y-1.5 border-t border-line pt-3">
