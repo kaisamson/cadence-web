@@ -3,20 +3,43 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { EDITABLE_CATEGORIES, categoryStyle } from "@/lib/categories";
+import { computeMetrics } from "@/lib/metrics";
 import { formatClock, formatDuration, timeToMinutes } from "@/lib/time";
 import type { DayEvent } from "@/lib/days";
 
-/** 00:00–03:59 blocks are the tail of the previous evening, shown separately. */
+/** Where the day splits when there is no morning sleep block to anchor on. */
 const AFTER_MIDNIGHT_CUTOFF = 4 * 60;
+
+/** A sleep run starting later than this is a nap or an early night — it ends on
+ *  this date rather than opening it, so it cannot anchor the split. */
+const LATEST_ANCHOR_SLEEP_START = 8 * 60;
+
+/**
+ * The minute this date starts *as lived*: the moment the night's main sleep
+ * begins. Anything before it happened after midnight and belongs to the
+ * previous evening, so it must not lead the timeline.
+ *
+ * A fixed clock cutoff cannot do this job — going to bed at 02:30 put the
+ * night's sleep on the wrong side of a 04:00 line, filing it with the previous
+ * evening's blocks instead of opening the morning.
+ */
+function dayStartMinute(events: DayEvent[]): number {
+  const { mainSleepStart } = computeMetrics(events);
+  if (mainSleepStart != null && mainSleepStart < LATEST_ANCHOR_SLEEP_START) {
+    return mainSleepStart;
+  }
+  return AFTER_MIDNIGHT_CUTOFF;
+}
 
 type Props = { events: DayEvent[] };
 
 export function TimelineEditor({ events }: Props) {
-  const afterMidnight = events.filter((e) => {
+  const dayStart = dayStartMinute(events);
+  const nightBefore = events.filter((e) => {
     const m = timeToMinutes(e.startTime);
-    return m != null && m < AFTER_MIDNIGHT_CUTOFF;
+    return m != null && m < dayStart;
   });
-  const daytime = events.filter((e) => !afterMidnight.includes(e));
+  const daytime = events.filter((e) => !nightBefore.includes(e));
 
   if (events.length === 0) {
     return (
@@ -26,25 +49,27 @@ export function TimelineEditor({ events }: Props) {
 
   return (
     <div className="space-y-5">
-      {afterMidnight.length > 0 && (
+      {daytime.length > 0 && (
         <section>
-          <SectionLabel
-            title="After midnight"
-            hint="Late blocks carried from the night before"
-          />
-          <div className="mt-2 space-y-1.5">
-            {afterMidnight.map((e) => (
+          {nightBefore.length > 0 && (
+            <SectionLabel title="Day" hint="From when you went to sleep" />
+          )}
+          <div className={nightBefore.length > 0 ? "mt-2 space-y-1.5" : "space-y-1.5"}>
+            {daytime.map((e) => (
               <EventRow key={e.id} event={e} />
             ))}
           </div>
         </section>
       )}
 
-      {daytime.length > 0 && (
+      {nightBefore.length > 0 && (
         <section>
-          {afterMidnight.length > 0 && <SectionLabel title="Day" />}
-          <div className={afterMidnight.length > 0 ? "mt-2 space-y-1.5" : "space-y-1.5"}>
-            {daytime.map((e) => (
+          <SectionLabel
+            title="After midnight"
+            hint="The tail of the previous evening, before you slept"
+          />
+          <div className="mt-2 space-y-1.5">
+            {nightBefore.map((e) => (
               <EventRow key={e.id} event={e} />
             ))}
           </div>

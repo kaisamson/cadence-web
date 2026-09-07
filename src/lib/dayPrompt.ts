@@ -68,7 +68,9 @@ This is the most important rule.
 - startTime must always be strictly before endTime. Never emit a span that
   crosses midnight and never place events on another date.
 - Activity continuing past midnight ("coding until 2am") belongs at the START of
-  this date: e.g. 00:30–02:00. The UI groups 00:00–04:00 as "After midnight".
+  this date: e.g. 00:30–02:00. The UI splits the day at the start of the night's
+  main sleep and shows anything earlier under "After midnight", so keep those
+  blocks accurate — they are read as the tail of the previous evening.
 
 ## SLEEP
 
